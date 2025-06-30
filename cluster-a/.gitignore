@@ -1,0 +1,66 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfplan
+*.tfvars
+.terraformrc
+terraform.rc
+
+# Helm
+charts/*/charts/
+charts/*/requirements.lock
+*.tgz
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+
+# AWS
+.aws/
+aws-credentials
+
+# Logs
+*.log
+logs/
+
+# Backups
+backups/
+*.tar.gz
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Secrets
+secrets/
+*.pem
+*.key
+*.crt
+*.p12
+
+# ArgoCD
+argocd-initial-admin-secret.yaml
+
+# Helmfile
+.helmfile.d/ 

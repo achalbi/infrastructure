@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: appender-java
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/your-org/your-infrastructure-repo
+    targetRevision: HEAD
+    path: cluster-a/helmfile/charts/appender-java
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: appender-java
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true 

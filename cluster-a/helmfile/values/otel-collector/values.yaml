@@ -1,0 +1,55 @@
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+  exporters:
+    # debug: to be not present in production value file
+    debug:
+      verbosity: detailed
+    # otlp:
+    #   endpoint: otelcol.observability.svc.cluster.local:443
+  service:
+    pipelines:
+      traces:
+        receivers: [ otlp ]
+        processors: []
+        exporters: [debug ]
+      metrics:
+        receivers: [ otlp ]
+        processors: []
+        exporters: [ debug ]
+      logs:
+        receivers: [ otlp ]
+        processors: []
+        exporters: [ debug ]
+
+
+ports:
+  metrics:
+    enabled: true
+
+mode: deployment
+replicaCount: 1
+
+presets:
+  kubernetesEvents:
+    enabled: true
+
+image:
+  repository: otel/opentelemetry-collector-contrib
+  pullPolicy: Always
+
+fullnameOverride: "opentelemetry-collector"
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 512Mi
+
+serviceMonitor:
+  enabled: false

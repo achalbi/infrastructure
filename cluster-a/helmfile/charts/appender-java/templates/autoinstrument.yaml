@@ -1,0 +1,10 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: {{ .Values.otelAutoInstrumentation.instrumentationName }}
+  namespace: {{ .Values.otelAutoInstrumentation.namespace }}
+spec:
+  exporter:
+    endpoint: {{ .Values.otelAutoInstrumentation.exporterEndpoint | quote }}
+  java:
+    image: {{ .Values.otelAutoInstrumentation.javaAgentImage | quote }}

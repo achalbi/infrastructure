@@ -1,0 +1,60 @@
+{{- if not .Values.instances.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "appender-java.fullname" . }}
+  labels:
+    {{- include "appender-java.labels" . | nindent 4 }}
+  {{- if .Values.otelAutoInstrumentation.enabled }}
+  annotations:
+    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/instrumentation: "{{ .Values.otelAutoInstrumentation.instrumentationName }}"
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "appender-java.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "appender-java.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.port }}
+          protocol: TCP
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: TARGET_URL
+          value: {{ .Values.targetUrl | default "http://your-target-service:8080/your-endpoint" | quote }}
+        - name: SPRING_PROFILES_ACTIVE
+          value: {{ .Values.springProfilesActive | quote }}
+        {{- if .Values.otelAutoInstrumentation.enabled }}
+        - name: JAVA_TOOL_OPTIONS
+          value: "-javaagent:/otel-auto-instrumentation/javaagent.jar"
+        {{- end }}
+        {{- if .Values.resources }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: http
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds | default 30 }}
+          periodSeconds: {{ .Values.livenessProbe.periodSeconds | default 10 }}
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: http
+          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds | default 20 }}
+          periodSeconds: {{ .Values.readinessProbe.periodSeconds | default 5 }}
+{{- end }}

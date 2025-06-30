@@ -1,0 +1,16 @@
+environments:
+  development:
+    values:
+      - replicaCount: 1
+      - image:
+          tag: "latest"
+      - ingress:
+          enabled: true
+          host: dev.example.com
+
+---
+releases:
+  - name: appender-java-dev
+    namespace: appender-java-dev
+    createNamespace: true
+    chart: ../../charts/appender-java

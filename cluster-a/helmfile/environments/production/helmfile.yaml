@@ -1,0 +1,39 @@
+environments:
+  production:
+    values:
+      - replicaCount: 3
+      - image:
+          tag: "stable"
+      - ingress:
+          enabled: true
+          host: app.example.com
+
+---
+releases:
+  - name: appender-java-prod
+    namespace: appender-java-prod
+    createNamespace: true
+    chart: ../../charts/appender-java
+    values:
+      - replicaCount: 2
+      - instances:
+          enabled: true
+          count: 10
+          namePattern: "appender-java-%02d"
+          basePort: 8080
+      - image:
+          repository: achalbi/appender-java
+          tag: "stable"
+      - service:
+          type: ClusterIP
+          port: 8080
+      - ingress:
+          enabled: true
+          host: app.example.com
+      - resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi 
