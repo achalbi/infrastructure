@@ -379,11 +379,25 @@ deploy_infrastructure() {
     helmfile -e $env apply --selector name=${prefix}opentelemetry-collector-daemonset
     # Wait for OpenTelemetry Collector DaemonSet
     print_status "Waiting for OpenTelemetry Collector DaemonSet..."
-    kubectl rollout status daemonset/opentelemetry-collector-daemonset -n ${prefix}observability --timeout=300s || print_error "OpenTelemetry Collector DaemonSet failed to become ready"
+    kubectl rollout status daemonset/opentelemetry-collector-daemonset-agent -n ${prefix}observability --timeout=300s || print_error "OpenTelemetry Collector DaemonSet failed to become ready"
 
     # Deploy pre-install charts (OpenTelemetry instrumentation)
     print_status "Deploying pre-install charts (OpenTelemetry instrumentation)..."
-    helmfile -e $env apply --selector name=${prefix}pre-install
+        
+    # Deploy using environment-specific helmfile configuration
+    case $env in
+        "dev")
+            print_status "Using development environment configuration..."
+            # Deploy using the development environment helmfile
+            helmfile -f environments/development/helmfile.yaml apply --selector name=pre-install
+            ;;
+        "prod")
+            print_status "Using production environment configuration..."
+            # Deploy using the production environment helmfile
+            helmfile -f environments/production/helmfile.yaml apply --selector name=pre-install
+            ;;
+    esac
+
     print_status "pre-install resources created..."
 
     print_status "All infrastructure components deployed and ready"
@@ -446,23 +460,15 @@ wait_for_infrastructure() {
 
     # Wait for OpenTelemetry Collector DaemonSet
     print_status "Waiting for OpenTelemetry Collector DaemonSet..."
-    if kubectl rollout status daemonset/opentelemetry-collector-daemonset -n ${prefix}observability --timeout=300s; then
+    if kubectl rollout status daemonset/opentelemetry-collector-daemonset-agent -n ${prefix}observability --timeout=300s; then
         print_status "OpenTelemetry Collector DaemonSet is ready"
     else
         print_error "OpenTelemetry Collector DaemonSet failed to become ready"
     fi
 
-    # Wait for pre-install
-    print_status "Waiting for pre-install..."
-    if kubectl wait --for=condition=available --timeout=300s deployment/pre-install -n ${prefix}observability; then
-        print_status "pre-install is ready"
-    else
-        print_error "pre-install failed to become ready"
-    fi
-
     # Wait for instrumentation
     print_status "Waiting for instrumentation..."
-    if kubectl wait --for=condition=available --timeout=300s instrumentation/java-instrumentation -n ${prefix}observability; then
+    if kubectl get instrumentation/java-instrumentation -n ${prefix}appender-java; then
         print_status "instrumentation is ready"
     else
         print_error "instrumentation failed to become ready"
@@ -529,11 +535,17 @@ show_infrastructure_status() {
     # Show Deployment status
     kubectl get deployments -n "$obs_ns" | grep "opentelemetry-collector-deployment" || true
     # Show DaemonSet status
-    kubectl get daemonsets -n "$obs_ns" | grep "opentelemetry-collector-daemonset" || true
+    kubectl get daemonsets -n "$obs_ns" | grep "opentelemetry-collector-daemonset-agent" || true
     # Show Services
     kubectl get services -n "$obs_ns" | grep "opentelemetry-collector" || true
     # Show Pods for both deployment and daemonset
     kubectl get pods -n "$obs_ns" | grep "opentelemetry-collector" || true
+
+    echo ""
+    local appender_java_ns="${prefix}appender-java"
+    echo -e "${CYAN}=== OpenTelemetry Instrumentation (${appender_java_ns}) ===${NC}"
+    #show instrumentation
+    kubectl get instrumentation -n "$appender_java_ns" | grep "java-instrumentation" || true
 }
 
 # Main deployment function that orchestrates the appender-java deployment

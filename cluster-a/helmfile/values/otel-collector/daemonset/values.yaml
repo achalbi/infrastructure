@@ -16,7 +16,9 @@ presets:
 
 # OpenTelemetry Collector configuration
 config:
-
+  receivers:
+    kubeletstats:
+      insecure_skip_verify: true
   processors:
     batch:
       timeout: 1s
@@ -28,9 +30,16 @@ config:
   exporters:
     # debug: to be not present in production value file
     debug:
-      verbosity: detailed
+      verbosity: basic
     otlp:
-      endpoint: "http://localhost:4317"
+      endpoint: "http://opentelemetry-collector-deployment.dev-observability:4317"
+      # sending_queue:
+      #   queue_size: 10000  # Increase from default (e.g., 2048)
+      #   num_consumers: 20  # Increase parallel export threads
+      # batch:
+      #   send_batch_size: 1000  # Number of items to batch
+      #   send_batch_max_size: 2000  # Max batch size
+      #   timeout: 5s  # Time to wait before sending a batch
       tls:
         insecure: true
 

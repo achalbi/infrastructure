@@ -5,5 +5,12 @@ metadata:
 spec:
   exporter:
     endpoint: {{ .Values.otelAutoInstrumentation.exporterEndpoint | quote }}
+  propagators:
+    - tracecontext
+    - baggage
+    - b3
+  sampler:
+    type: parentbased_traceidratio
+    argument: "1.0"
   java:
     image: {{ .Values.otelAutoInstrumentation.javaAgentImage | quote }}

@@ -25,31 +25,17 @@ readinessProbe:
   periodSeconds: 5
 
 ingress:
-  enabled: false
-  host: ""
-  annotations: {}
-
-# OpenTelemetry configuration
-opentelemetry:
   enabled: true
-  endpoint: "http://opentelemetry-collector.observability.svc.cluster.local:4317"
-  serviceName: "appender-java"
-  serviceVersion: "1.0.0"
-
+  host: "dev.example.com"
+  annotations: {}
+  ingressClassName: nginx
 
 # Resource limits and requests
 resources:
   limits:
-    cpu: 1000m
     memory: 1Gi
   requests:
     cpu: 500m
-    memory: 512Mi
-
-# Affinity and tolerations
-affinity: {}
-tolerations: []
-nodeSelector: {}
 
 # Service account
 serviceAccount:
@@ -57,10 +43,10 @@ serviceAccount:
   name: ""
 
 springProfilesActive: prod
+# Use this if you want to use the otel-colector of type deployment
+otelCollector:
+  exporterEndpoint: 
 
 otelAutoInstrumentation:
   enabled: "true"
   instrumentationName: java-instrumentation
-  namespace: dev-appender-java
-  exporterEndpoint: http://opentelemetry-collector.dev-observability:4317
-  javaAgentImage: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-java:latest

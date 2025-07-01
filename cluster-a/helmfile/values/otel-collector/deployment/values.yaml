@@ -29,7 +29,7 @@ config:
     debug:
       verbosity: detailed
     otlp:
-      endpoint: "http://localhost:4317"
+      endpoint: ""
       tls:
         insecure: true
 

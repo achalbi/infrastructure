@@ -16,7 +16,8 @@ releases:
     createNamespace: true
     chart: ../../charts/pre-install
     values:
-      - otelAutoInstrumentation.exporterEndpoint: http://opentelemetry-collector-daemonset.dev-observability:4317
+      - ../../values/pre-install/values.dev.yaml
+
 
   # Appender Java application
   - name: appender-java

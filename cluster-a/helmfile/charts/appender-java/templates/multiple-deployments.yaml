@@ -32,6 +32,11 @@ spec:
         {{- include "appender-java.selectorLabels" $ | nindent 8 }}
         app.kubernetes.io/instance: {{ $instanceName }}
         app.kubernetes.io/instance-index: {{ $instanceIndex | quote }}
+      {{- if $.Values.otelAutoInstrumentation.enabled }}
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "true"
+        instrumentation.opentelemetry.io/instrumentation: "{{ $.Values.otelAutoInstrumentation.instrumentationName }}"
+      {{- end }}
     spec:
       containers:
       - name: {{ $.Chart.Name }}
@@ -54,6 +59,12 @@ spec:
           value: {{ if $isFirst }}"begin"{{ else if $isLast }}"end"{{ else }}"link"{{ end }}
         - name: SPRING_PROFILES_ACTIVE
           value: {{ $.Values.springProfilesActive | quote }}
+        # - name: HOST_IP
+        #   valueFrom:
+        #     fieldRef:
+        #       fieldPath: status.hostIP
+        # - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        #   value: {{ $.Values.otelCollector.exporterEndpoint | default "http://$(HOST_IP):4317" }}
         {{- if not $isLast }}
         {{- $nextInstanceIndex := add $instanceIndex 1 }}
         {{- $nextInstanceName := printf $.Values.instances.namePattern $nextInstanceIndex }}
