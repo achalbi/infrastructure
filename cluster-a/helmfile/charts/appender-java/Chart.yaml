@@ -1,6 +1,6 @@
 apiVersion: v2
 name: appender-java
-description: A Java appender service chart
+description: Java application for appending data with OpenTelemetry integration
 type: application
 version: 0.1.0
 appVersion: "1.0.0" 

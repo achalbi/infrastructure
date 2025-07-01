@@ -1,0 +1,4 @@
+
+otelAutoInstrumentation:
+  instrumentationName: java-instrumentation
+  javaAgentImage: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-java:latest

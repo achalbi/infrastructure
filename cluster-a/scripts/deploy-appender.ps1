@@ -45,8 +45,8 @@ function Test-Prerequisites {
 function Get-Namespace {
     param([string]$Env)
     switch ($Env.ToLower()) {
-        "dev" { return "appender-java-dev" }
-        "prod" { return "appender-java-prod" }
+        "dev" { return "dev-appender-java" }
+        "prod" { return "prod-appender-java" }
         default { 
             Write-Error "Invalid environment: $Env. Use 'dev' or 'prod'"
             exit 1
@@ -81,10 +81,10 @@ function Start-Appender {
     # Deploy using environment-specific helmfile
     if ($Env -eq "dev") {
         Write-Status "Using development environment configuration..."
-        helmfile -e development apply --selector name=appender-java-dev
+        helmfile -e development apply --selector name=appender-java
     } elseif ($Env -eq "prod") {
         Write-Status "Using production environment configuration..."
-        helmfile -e production apply --selector name=appender-java-prod
+        helmfile -e production apply --selector name=appender-java
     }
     
     Write-Status "Appender-java deployment completed"
@@ -165,9 +165,9 @@ function Remove-Appender {
         Set-Location "$scriptDir/../helmfile"
         
         if ($Env -eq "dev") {
-            helmfile -e development delete --selector name=appender-java-dev
+            helmfile -e development delete --selector name=appender-java
         } elseif ($Env -eq "prod") {
-            helmfile -e production delete --selector name=appender-java-prod
+            helmfile -e production delete --selector name=appender-java
         }
         
         Write-Status "Appender-java deletion completed"

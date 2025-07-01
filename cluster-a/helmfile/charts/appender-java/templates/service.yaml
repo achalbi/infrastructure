@@ -1,17 +1,27 @@
-{{- if not .Values.instances.enabled }}
+{{- if .Values.instances.enabled }}
+{{- range $index := until (.Values.instances.count | int) }}
+{{- $instanceIndex := add $index 1 }}
+{{- $instanceName := printf $.Values.instances.namePattern $instanceIndex }}
+{{- $instancePort := $.Values.instances.basePort }}
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "appender-java.fullname" . }}
+  name: {{ $instanceName }}-service
   labels:
-    {{- include "appender-java.labels" . | nindent 4 }}
+    {{- include "appender-java.labels" $ | nindent 4 }}
+    app.kubernetes.io/instance: {{ $instanceName }}
+    app.kubernetes.io/instance-index: {{ $instanceIndex | quote }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ $.Values.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
+    - port: {{ $instancePort }}
       targetPort: http
+      nodePort: {{ $.Values.service.nodePort }}
       protocol: TCP
       name: http
   selector:
-    {{- include "appender-java.selectorLabels" . | nindent 4 }}
+    {{- include "appender-java.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/instance: {{ $instanceName }}
+{{- end }} 
 {{- end }} 

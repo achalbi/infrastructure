@@ -10,7 +10,20 @@ environments:
 
 ---
 releases:
-  - name: appender-java-dev
-    namespace: appender-java-dev
+  # Pre-install chart - sets up prerequisites
+  - name: pre-install
+    namespace: dev-appender-java
+    createNamespace: true
+    chart: ../../charts/pre-install
+    values:
+      - otelAutoInstrumentation.exporterEndpoint: http://opentelemetry-collector-daemonset.dev-observability:4317
+
+  # Appender Java application
+  - name: appender-java
+    namespace: dev-appender-java
     createNamespace: true
     chart: ../../charts/appender-java
+    needs:
+      - dev-appender-java/pre-install
+
+

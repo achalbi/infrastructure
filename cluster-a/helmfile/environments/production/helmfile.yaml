@@ -10,10 +10,21 @@ environments:
 
 ---
 releases:
-  - name: appender-java-prod
-    namespace: appender-java-prod
+  # Pre-install chart - sets up prerequisites
+  - name: pre-install
+    namespace: prod-appender-java
+    createNamespace: true
+    chart: ../../charts/pre-install
+    values:
+      - otelAutoInstrumentation.exporterEndpoint: http://opentelemetry-collector-daemonset.prod-observability:4317
+
+  # Appender Java application
+  - name: appender-java
+    namespace: prod-appender-java
     createNamespace: true
     chart: ../../charts/appender-java
+    needs:
+      - prod-appender-java/pre-install
     values:
       - replicaCount: 2
       - instances:
@@ -30,6 +41,10 @@ releases:
       - ingress:
           enabled: true
           host: app.example.com
+      - opentelemetry:
+          enabled: true
+          endpoint: "http://opentelemetry-collector.observability.svc.cluster.local:4317"
+          serviceName: "appender-java-prod"
       - resources:
           limits:
             cpu: 500m

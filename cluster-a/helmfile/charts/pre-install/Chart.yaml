@@ -1,0 +1,6 @@
+apiVersion: v2
+name: pre-install
+description: Pre-installation chart for setting up prerequisites before appender-java deployment
+type: application
+version: 0.1.0
+appVersion: "1.0.0" 

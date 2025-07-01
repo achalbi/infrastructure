@@ -87,12 +87,74 @@ check_helmfile_releases() {
     fi
 }
 
+# Check pre-install charts (OpenTelemetry instrumentation)
+check_pre_install_charts() {
+    print_header "Checking Pre-install Charts (OpenTelemetry Instrumentation)"
+    
+    # Check for OpenTelemetry instrumentation resources
+    print_status "Checking OpenTelemetry Instrumentation resources..."
+    
+    # Check instrumentation resources
+    instrumentation_list=$(kubectl get instrumentation --all-namespaces 2>/dev/null || true)
+    if [ -n "$instrumentation_list" ]; then
+        print_status "OpenTelemetry Instrumentation resources:"
+        echo "$instrumentation_list"
+    else
+        print_warning "No OpenTelemetry Instrumentation resources found"
+    fi
+    
+    # Check for pre-install namespaces
+    namespaces=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | grep -E "(appender-java)" || true)
+    
+    for namespace in $namespaces; do
+        print_status "Checking OpenTelemetry instrumentation in namespace: $namespace"
+        
+        # Check for instrumentation annotations on pods
+        pods_with_instrumentation=$(kubectl get pods -n "$namespace" -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.metadata.annotations.instrumentation\.opentelemetry\.io/inject-java}{"\n"}{end}' 2>/dev/null | grep -v "null" || true)
+        if [ -n "$pods_with_instrumentation" ]; then
+            print_status "Pods with OpenTelemetry instrumentation:"
+            echo "$pods_with_instrumentation"
+        fi
+    done
+}
+
+# Check appender-java applications
+check_appender_java_applications() {
+    print_header "Checking Appender Java Applications"
+    
+    # Check for appender-java resources in all namespaces
+    namespaces=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | grep "appender-java" || true)
+    
+    for namespace in $namespaces; do
+        print_status "Checking appender-java in namespace: $namespace"
+        
+        # Check deployments
+        print_status "Deployments:"
+        kubectl get deployments -n "$namespace" | grep "appender-java" || true
+        
+        # Check pods
+        print_status "Pods:"
+        kubectl get pods -n "$namespace" | grep "appender-java" || true
+        
+        # Check services
+        print_status "Services:"
+        kubectl get services -n "$namespace" | grep "appender-java" || true
+        
+        # Check for failed pods
+        failed_pods=$(kubectl get pods -n "$namespace" --no-headers | grep "appender-java" | grep -c "Failed\|CrashLoopBackOff\|Error" || true)
+        if [ "$failed_pods" -gt 0 ]; then
+            print_warning "Found $failed_pods failed appender-java pod(s) in namespace $namespace"
+            kubectl get pods -n "$namespace" | grep "appender-java" | grep -E "Failed|CrashLoopBackOff|Error"
+        fi
+    done
+}
+
 # Check application health
 check_application_health() {
     print_header "Checking Application Health"
     
     # Get all namespaces with applications
-    app_namespaces=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | grep -E "(sample-app|monitoring|ingress-nginx)" || true)
+    app_namespaces=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | grep -E "(sample-app|monitoring|ingress-nginx|observability|cert-manager)" || true)
     
     for namespace in $app_namespaces; do
         print_status "Checking namespace: $namespace"
@@ -169,6 +231,23 @@ check_network() {
     kubectl get endpoints --all-namespaces
 }
 
+# Check OpenTelemetry components
+check_opentelemetry() {
+    print_header "Checking OpenTelemetry Components"
+    
+    # Check OpenTelemetry Collector
+    print_status "OpenTelemetry Collector:"
+    kubectl get pods -n observability | grep "opentelemetry-collector" || true
+    
+    # Check OpenTelemetry Operator
+    print_status "OpenTelemetry Operator:"
+    kubectl get pods -n observability | grep "opentelemetry-operator" || true
+    
+    # Check Instrumentation resources
+    print_status "OpenTelemetry Instrumentation:"
+    kubectl get instrumentation --all-namespaces || true
+}
+
 # Check logs for errors
 check_logs() {
     print_header "Checking Recent Logs for Errors"
@@ -179,6 +258,13 @@ check_logs() {
     
     print_status "ArgoCD Application Controller Logs (last 50 lines with errors):"
     kubectl logs -n argocd deployment/argocd-application-controller --tail=50 | grep -i error || true
+    
+    # Check appender-java logs for errors
+    namespaces=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | grep "appender-java" || true)
+    for namespace in $namespaces; do
+        print_status "Appender Java Logs in $namespace (last 20 lines with errors):"
+        kubectl logs -n "$namespace" deployment/appender-java --tail=20 | grep -i error || true
+    done
 }
 
 # Generate health report
@@ -202,6 +288,15 @@ generate_health_report() {
         
         echo "=== ArgoCD Applications ==="
         kubectl get applications -n argocd
+        echo ""
+        
+        echo "=== Pre-install Resources (OpenTelemetry Instrumentation) ==="
+        kubectl get instrumentation --all-namespaces || true
+        echo ""
+        
+        echo "=== Appender Java Applications ==="
+        kubectl get deployments --all-namespaces | grep "appender-java" || true
+        kubectl get pods --all-namespaces | grep "appender-java" || true
         echo ""
         
         echo "=== All Pods Status ==="
@@ -233,8 +328,20 @@ main() {
     check_helmfile_releases
     echo ""
     
+    # Check pre-install charts
+    check_pre_install_charts
+    echo ""
+    
+    # Check appender-java applications
+    check_appender_java_applications
+    echo ""
+    
     # Check application health
     check_application_health
+    echo ""
+    
+    # Check OpenTelemetry components
+    check_opentelemetry
     echo ""
     
     # Check resource usage

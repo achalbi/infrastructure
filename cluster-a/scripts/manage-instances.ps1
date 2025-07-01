@@ -29,9 +29,9 @@ function Write-Error {
 # Get namespace based on environment
 function Get-Namespace {
     param([string]$Env)
-    switch ($Env.ToLower()) {
-        "dev" { return "appender-java-dev" }
-        "prod" { return "appender-java-prod" }
+    switch ($Env.ToLower()) {   
+        "dev" { return "dev-appender-java" }
+        "prod" { return "prod-appender-java" }
         default { return "appender-java" }
     }
 }

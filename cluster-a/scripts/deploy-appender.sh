@@ -61,15 +61,16 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Print menu headers in cyan
-print_header() {
-    echo -e "${CYAN}$1${NC}"
+# Use printf for colored output
+default_print_header() {
+    printf "%b%s%b\n" "$CYAN" "$1" "$NC"
 }
-
-# Print menu options in blue
-print_option() {
-    echo -e "${BLUE}$1${NC}"
+default_print_option() {
+    printf "%b%s%b\n" "$BLUE" "$1" "$NC"
 }
+# Replace print_header and print_option with new versions
+print_header() { default_print_header "$1"; }
+print_option() { default_print_option "$1"; }
 
 # =============================================================================
 # CLUSTER AND PREREQUISITE CHECKING
@@ -124,9 +125,8 @@ set_cluster_context() {
 # INTERACTIVE MENU SYSTEM
 # =============================================================================
 
-# Display the main environment selection menu
-show_main_menu() {
-    clear
+# Show environment selection menu
+env_menu() {
     print_header "=========================================="
     print_header "    Appender Java Deployment Manager"
     print_header "=========================================="
@@ -134,32 +134,46 @@ show_main_menu() {
     print_header "Target Cluster: $CLUSTER_NAME"
     echo ""
     print_header "Select Environment:"
-    print_option "1) Development (4 instances)"
-    print_option "2) Production (10 instances)"
-    print_option "3) Infrastructure"
+    print_option "1) Development"
+    print_option "2) Production"
+    print_option "3) Exit"
     echo ""
-    print_option "4) Help"
-    print_option "5) Exit"
-    echo ""
+    sleep 0.2
 }
 
-# Display the action menu for a selected environment
-show_action_menu() {
+# Show domain (app/infra) menu
+domain_menu() {
     local env=$1
-    clear
     print_header "=========================================="
     print_header "    Appender Java Deployment Manager"
     print_header "=========================================="
     echo ""
-    print_header "Target Cluster: $CLUSTER_NAME"
     print_header "Environment: $env"
+    print_header "Select Domain:"
+    print_option "1) Appender Java Application"
+    print_option "2) Infrastructure"
+    print_option "3) Back"
     echo ""
-    
-    if [ "$env" = "infra" ]; then
+    sleep 0.2
+}
+
+# Show action menu for app or infra
+action_menu() {
+    local env=$1
+    local domain=$2
+    print_header "=========================================="
+    print_header "    Appender Java Deployment Manager"
+    print_header "=========================================="
+    echo ""
+    print_header "Environment: $env"
+    print_header "Domain: $domain"
+    echo ""
+    if [ "$domain" = "infra" ]; then
         print_header "Infrastructure Actions:"
-        print_option "1) Deploy Infrastructure (ArgoCD, Ingress-Nginx, cert-manager, OpenTelemetry Operator, OpenTelemetry Collector)"
+        print_option "1) Deploy Infrastructure (ArgoCD, Ingress-Nginx, cert-manager, OpenTelemetry Operator, OpenTelemetry Collector, OpenTelemetry Instrumentation)"
         print_option "2) Show Infrastructure Status"
-        print_option "3) Back to Environment Selection"
+        print_option "3) Clear Infrastructure"
+        print_option "4) Back"
         echo ""
     else
         print_header "Appender Actions:"
@@ -169,116 +183,97 @@ show_action_menu() {
         print_option "4) Delete Appender"
         print_option "5) Restart Appender Pods"
         print_option "6) Port Forward to First Appender"
-        print_option "7) Back to Environment Selection"
+        print_option "7) Back"
         echo ""
     fi
-    
+    sleep 0.2
 }
 
-# Get environment selection from user
-get_environment_selection() {
+# Get environment selection
+grab_env() {
     local choice
-    read -p "Enter your choice (1-5): " choice
-    
+    env_menu
+    read -p "Enter your choice (1-3): " choice
     case $choice in
-        1) echo "dev" ;;
-        2) echo "prod" ;;
-        3) echo "infra" ;;
-        4) echo "help" ;;
-        5) echo "exit" ;;
-        *) 
-            print_error "Invalid choice"
-            return 1
-            ;;
+        1) ENVIRONMENT="dev" ;;
+        2) ENVIRONMENT="prod" ;;
+        3) ENVIRONMENT="exit" ;;
+        *) print_error "Invalid choice"; ENVIRONMENT="exit" ;;
     esac
+    return 0
 }
 
-# Get action selection from user
-get_action_selection() {
+# Get domain selection
+grab_domain() {
     local env=$1
     local choice
-    
-    if [ "$env" = "infra" ]; then
-        read -p "Enter your choice (1-3): " choice
+    domain_menu "$env"
+    read -p "Enter your choice (1-3): " choice
+    case $choice in
+        1) DOMAIN="app" ;;
+        2) DOMAIN="infra" ;;
+        3) DOMAIN="back" ;;
+        *) print_error "Invalid choice"; DOMAIN="back" ;;
+    esac
+    return 0
+}
+
+# Get action selection for app or infra
+grab_action() {
+    local env=$1
+    local domain=$2
+    local choice
+    action_menu "$env" "$domain"
+    if [ "$domain" = "infra" ]; then
+        read -p "Enter your choice (1-4): " choice
         case $choice in
-            1) echo "infra" ;;
-            2) echo "status" ;;
-            3) echo "back" ;;
-            *) 
-                print_error "Invalid choice"
-                return 1
-                ;;
+            1) ACTION="infra" ;;
+            2) ACTION="status" ;;
+            3) ACTION="clear" ;;
+            4) ACTION="back" ;;
+            *) print_error "Invalid choice"; ACTION="back" ;;
         esac
     else
         read -p "Enter your choice (1-7): " choice
         case $choice in
-            1) echo "deploy" ;;
-            2) echo "status" ;;
-            3) echo "test" ;;
-            4) echo "delete" ;;
-            5) echo "restart" ;;
-            6) echo "portforward" ;;
-            7) echo "back" ;;
-            *) 
-                print_error "Invalid choice"
-                return 1
-                ;;
+            1) ACTION="deploy" ;;
+            2) ACTION="status" ;;
+            3) ACTION="test" ;;
+            4) ACTION="delete" ;;
+            5) ACTION="restart" ;;
+            6) ACTION="portforward" ;;
+            7) ACTION="back" ;;
+            *) print_error "Invalid choice"; ACTION="back" ;;
         esac
     fi
+    return 0
 }
 
-# Interactive mode - show menu and handle user input
+# Refactored interactive_mode
 interactive_mode() {
     while true; do
-        show_main_menu
-        
-        # Get environment selection
-        ENVIRONMENT=$(get_environment_selection)
-        if [ $? -ne 0 ]; then
-            sleep 2
-            continue
-        fi
-        
-        # Handle exit
+        grab_env
         if [ "$ENVIRONMENT" = "exit" ]; then
             print_status "Exiting..."
             exit 0
         fi
-        
-        # Handle help
-        if [ "$ENVIRONMENT" = "help" ]; then
-            show_help
-            echo ""
-            read -p "Press Enter to continue..."
-            continue
-        fi
-        
-        # Show action menu for selected environment
         while true; do
-            show_action_menu "$ENVIRONMENT"
-            
-            # Get action selection
-            ACTION=$(get_action_selection "$ENVIRONMENT")
-            if [ $? -ne 0 ]; then
-                sleep 2
-                continue
-            fi
-            
-            # Handle back to main menu
-            if [ "$ACTION" = "back" ]; then
+            grab_domain "$ENVIRONMENT"
+            if [ "$DOMAIN" = "back" ]; then
                 break
             fi
-            
-            # Execute the selected action
-            echo ""
-            print_status "Executing: $ACTION on $ENVIRONMENT environment"
-            echo ""
-            
-            # Run the main logic
-            execute_action "$ENVIRONMENT" "$ACTION"
-            
-            echo ""
-            read -p "Press Enter to continue..."
+            while true; do
+                grab_action "$ENVIRONMENT" "$DOMAIN"
+                if [ "$ACTION" = "back" ]; then
+                    break
+                fi
+                echo ""
+                print_status "Executing: $ACTION on $DOMAIN in $ENVIRONMENT environment"
+                echo ""
+                execute_action "$ENVIRONMENT" "$ACTION"
+                echo ""
+                read -p "Press Enter to continue..."
+            done
         done
     done
 }
@@ -291,8 +286,8 @@ interactive_mode() {
 get_namespace() {
     local env=$1
     case ${env,,} in  # ${env,,} converts to lowercase
-        "dev") echo "appender-java-dev" ;;
-        "prod") echo "appender-java-prod" ;;
+        "dev") echo "dev-appender-java" ;;
+        "prod") echo "prod-appender-java" ;;
         *) 
             print_error "Invalid environment: $env. Use 'dev' or 'prod'"
             exit 1
@@ -314,141 +309,231 @@ get_instance_count() {
 # DEPLOYMENT FUNCTIONS
 # =============================================================================
 
+# Helper to get environment prefix
+get_env_prefix() {
+    local env=$1
+    case ${env,,} in
+        "dev") echo "dev-" ;;
+        "prod") echo "prod-" ;;
+        *) echo "" ;;
+    esac
+}
+
 # Deploy infrastructure components (ArgoCD, Ingress-Nginx, cert-manager, OpenTelemetry Operator)
 deploy_infrastructure() {
-    print_status "Deploying infrastructure components to cluster: $CLUSTER_NAME"
+    local env=${1:-$ENVIRONMENT}
+    local prefix=$(get_env_prefix "$env")
+    print_status "Deploying infrastructure components to cluster: $CLUSTER_NAME for environment: $env (prefix: $prefix)"
     echo ""
-    script_dir=$(cd "$(dirname "$0")" && pwd)
-    cd "$script_dir/../helmfile"
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    helmfile_dir="$script_dir/../helmfile"
+    
+    if [ ! -d "$helmfile_dir" ]; then
+        print_error "Helmfile directory not found: $helmfile_dir"
+        print_error "Current directory: $(pwd)"
+        print_error "Script directory: $script_dir"
+        exit 1
+    fi
+    
+    print_status "Navigating to helmfile directory: $helmfile_dir"
+    cd "$helmfile_dir"
 
     # Deploy ArgoCD
     print_status "Deploying ArgoCD..."
-    helmfile apply --selector name=argocd
+    helmfile -e $env apply --selector name=${prefix}argocd
     # Wait for ArgoCD
     print_status "Waiting for ArgoCD..."
-    kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd || print_error "ArgoCD failed to become ready"
+    kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n ${prefix}argocd || print_error "ArgoCD failed to become ready"
 
     # Deploy Ingress-Nginx
     print_status "Deploying Ingress-Nginx..."
-    helmfile apply --selector name=ingress-nginx
+    helmfile -e $env apply --selector name=${prefix}ingress-nginx
     # Wait for Ingress-Nginx
     print_status "Waiting for Ingress-Nginx..."
-    kubectl wait --for=condition=available --timeout=300s deployment/ingress-nginx-controller -n ingress-nginx || print_error "Ingress-Nginx failed to become ready"
+    kubectl wait --for=condition=available --timeout=300s deployment/ingress-nginx-controller -n ${prefix}ingress-nginx || print_error "Ingress-Nginx failed to become ready"
 
     # Deploy cert-manager
     print_status "Deploying cert-manager..."
-    helmfile apply --selector name=cert-manager
+    helmfile -e $env apply --selector name=${prefix}cert-manager
     # Wait for cert-manager
     print_status "Waiting for cert-manager..."
-    kubectl get namespace cert-manager >/dev/null 2>&1 || kubectl create namespace cert-manager
-    kubectl wait --for=condition=available --timeout=300s deployment/cert-manager -n cert-manager || print_error "cert-manager failed to become ready"
+    kubectl get namespace ${prefix}cert-manager >/dev/null 2>&1 || kubectl create namespace ${prefix}cert-manager
+    kubectl wait --for=condition=available --timeout=300s deployment/cert-manager -n ${prefix}cert-manager || print_error "cert-manager failed to become ready"
 
     # Deploy OpenTelemetry Operator
     print_status "Deploying OpenTelemetry Operator..."
-    helmfile apply --selector name=opentelemetry-operator
+    helmfile -e $env apply --selector name=${prefix}opentelemetry-operator
     # Wait for OpenTelemetry Operator
     print_status "Waiting for OpenTelemetry Operator..."
-    kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator -n observability || print_error "OpenTelemetry Operator failed to become ready"
+    kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator -n ${prefix}observability || print_error "OpenTelemetry Operator failed to become ready"
 
-    # Deploy OpenTelemetry Collector
-    print_status "Deploying OpenTelemetry Collector..."
-    helmfile apply --selector name=opentelemetry-collector
-    # Wait for OpenTelemetry Collector
-    print_status "Waiting for OpenTelemetry Collector..."
-    kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-collector -n observability || print_error "OpenTelemetry Collector failed to become ready"
+    # Deploy OpenTelemetry Collector (Deployment)
+    print_status "Deploying OpenTelemetry Collector (Deployment)..."
+    helmfile -e $env apply --selector name=${prefix}opentelemetry-collector-deployment
+    # Wait for OpenTelemetry Collector Deployment
+    print_status "Waiting for OpenTelemetry Collector Deployment..."
+    kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-collector-deployment -n ${prefix}observability || print_error "OpenTelemetry Collector Deployment failed to become ready"
+
+    # Deploy OpenTelemetry Collector (DaemonSet)
+    print_status "Deploying OpenTelemetry Collector (DaemonSet)..."
+    helmfile -e $env apply --selector name=${prefix}opentelemetry-collector-daemonset
+    # Wait for OpenTelemetry Collector DaemonSet
+    print_status "Waiting for OpenTelemetry Collector DaemonSet..."
+    kubectl rollout status daemonset/opentelemetry-collector-daemonset -n ${prefix}observability --timeout=300s || print_error "OpenTelemetry Collector DaemonSet failed to become ready"
+
+    # Deploy pre-install charts (OpenTelemetry instrumentation)
+    print_status "Deploying pre-install charts (OpenTelemetry instrumentation)..."
+    helmfile -e $env apply --selector name=${prefix}pre-install
+    print_status "pre-install resources created..."
 
     print_status "All infrastructure components deployed and ready"
 }
 
 # Wait for infrastructure components to be ready
 wait_for_infrastructure() {
+    local env=$1
+    local prefix=""
+    if [ "$env" = "dev" ]; then
+        prefix="dev-"
+    elif [ "$env" = "prod" ]; then
+        prefix="prod-"
+    else
+        print_error "Unknown environment: $env"
+        return 1
+    fi
+
     print_status "Waiting for infrastructure components to be ready..."
-    
+
     # Wait for ArgoCD
     print_status "Waiting for ArgoCD..."
-    if kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd; then
+    if kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n ${prefix}argocd; then
         print_status "ArgoCD is ready"
     else
         print_error "ArgoCD failed to become ready"
     fi
-    
+
     # Wait for Ingress-Nginx
     print_status "Waiting for Ingress-Nginx..."
-    if kubectl wait --for=condition=available --timeout=300s deployment/ingress-nginx-controller -n ingress-nginx; then
+    if kubectl wait --for=condition=available --timeout=300s deployment/ingress-nginx-controller -n ${prefix}ingress-nginx; then
         print_status "Ingress-Nginx is ready"
     else
         print_error "Ingress-Nginx failed to become ready"
     fi
-    
+
     # Wait for cert-manager
     print_status "Waiting for cert-manager..."
-    if kubectl wait --for=condition=available --timeout=300s deployment/cert-manager -n cert-manager; then
+    if kubectl wait --for=condition=available --timeout=300s deployment/cert-manager -n ${prefix}cert-manager; then
         print_status "cert-manager is ready"
     else
         print_error "cert-manager failed to become ready"
     fi
-    
+
     # Wait for OpenTelemetry Operator
     print_status "Waiting for OpenTelemetry Operator..."
-    if kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator -n observability; then
+    if kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator -n ${prefix}observability; then
         print_status "OpenTelemetry Operator is ready"
     else
         print_error "OpenTelemetry Operator failed to become ready"
     fi
-    
-    # Wait for OpenTelemetry Collector
-    print_status "Waiting for OpenTelemetry Collector..."
-    if kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-collector -n observability; then
-        print_status "OpenTelemetry Collector is ready"
+
+    # Wait for OpenTelemetry Collector Deployment
+    print_status "Waiting for OpenTelemetry Collector Deployment..."
+    if kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-collector-deployment -n ${prefix}observability; then
+        print_status "OpenTelemetry Collector Deployment is ready"
     else
-        print_error "OpenTelemetry Collector failed to become ready"
+        print_error "OpenTelemetry Collector Deployment failed to become ready"
     fi
-    
-    print_status "All infrastructure components are ready"
+
+    # Wait for OpenTelemetry Collector DaemonSet
+    print_status "Waiting for OpenTelemetry Collector DaemonSet..."
+    if kubectl rollout status daemonset/opentelemetry-collector-daemonset -n ${prefix}observability --timeout=300s; then
+        print_status "OpenTelemetry Collector DaemonSet is ready"
+    else
+        print_error "OpenTelemetry Collector DaemonSet failed to become ready"
+    fi
+
+    # Wait for pre-install
+    print_status "Waiting for pre-install..."
+    if kubectl wait --for=condition=available --timeout=300s deployment/pre-install -n ${prefix}observability; then
+        print_status "pre-install is ready"
+    else
+        print_error "pre-install failed to become ready"
+    fi
+
+    # Wait for instrumentation
+    print_status "Waiting for instrumentation..."
+    if kubectl wait --for=condition=available --timeout=300s instrumentation/java-instrumentation -n ${prefix}observability; then
+        print_status "instrumentation is ready"
+    else
+        print_error "instrumentation failed to become ready"
+    fi
 }
 
 # Show infrastructure status
 show_infrastructure_status() {
-    print_status "Checking infrastructure status for cluster: $CLUSTER_NAME"
+    local env=$1
+    local prefix=""
+    if [ "$env" = "dev" ]; then
+        prefix="dev-"
+    elif [ "$env" = "prod" ]; then
+        prefix="prod-"
+    else
+        print_error "Unknown environment: $env"
+        return 1
+    fi
+
+    print_status "Checking infrastructure status for cluster: $CLUSTER_NAME (environment: $env)"
     echo ""
-    
-    # Show ArgoCD status
-    echo -e "${CYAN}=== ArgoCD Status ===${NC}"
-    kubectl get deployments -n argocd
+
+    # ArgoCD
+    local argocd_ns="${prefix}argocd"
+    echo -e "${CYAN}=== ArgoCD Status (${argocd_ns}) ===${NC}"
+    kubectl get deployments -n "$argocd_ns" || true
     echo ""
-    kubectl get services -n argocd
+    kubectl get services -n "$argocd_ns" || true
     echo ""
-    kubectl get pods -n argocd
-    
-    echo ""
-    echo -e "${CYAN}=== Ingress-Nginx Status ===${NC}"
-    kubectl get deployments -n ingress-nginx
-    echo ""
-    kubectl get services -n ingress-nginx
-    echo ""
-    kubectl get pods -n ingress-nginx
-    
-    echo ""
-    echo -e "${CYAN}=== cert-manager Status ===${NC}"
-    kubectl get deployments -n cert-manager
-    echo ""
-    kubectl get services -n cert-manager
-    echo ""
-    kubectl get pods -n cert-manager
-    
-    echo ""
-    echo -e "${CYAN}=== OpenTelemetry Operator Status ===${NC}"
-    kubectl get deployments -n observability
-    echo ""
-    kubectl get services -n observability
-    echo ""
-    kubectl get pods -n observability
+    kubectl get pods -n "$argocd_ns" || true
 
     echo ""
-    echo -e "${CYAN}=== OpenTelemetry Collector Status ===${NC}"
-    kubectl get deployments -n observability | grep opentelemetry-collector || true
-    kubectl get services -n observability | grep opentelemetry-collector || true
-    kubectl get pods -n observability | grep opentelemetry-collector || true
+    # Ingress-Nginx
+    local ingress_ns="${prefix}ingress-nginx"
+    echo -e "${CYAN}=== Ingress-Nginx Status (${ingress_ns}) ===${NC}"
+    kubectl get deployments -n "$ingress_ns" || true
+    echo ""
+    kubectl get services -n "$ingress_ns" || true
+    echo ""
+    kubectl get pods -n "$ingress_ns" || true
+
+    echo ""
+    # cert-manager
+    local cert_ns="${prefix}cert-manager"
+    echo -e "${CYAN}=== cert-manager Status (${cert_ns}) ===${NC}"
+    kubectl get deployments -n "$cert_ns" || true
+    echo ""
+    kubectl get services -n "$cert_ns" || true
+    echo ""
+    kubectl get pods -n "$cert_ns" || true
+
+    echo ""
+    # OpenTelemetry Operator & Collector
+    local obs_ns="${prefix}observability"
+    echo -e "${CYAN}=== OpenTelemetry Operator Status (${obs_ns}) ===${NC}"
+    kubectl get deployments -n "$obs_ns" || true
+    echo ""
+    kubectl get services -n "$obs_ns" || true
+    echo ""
+    kubectl get pods -n "$obs_ns" || true
+
+    echo ""
+    echo -e "${CYAN}=== OpenTelemetry Collector Status (${obs_ns}) ===${NC}"
+    # Show Deployment status
+    kubectl get deployments -n "$obs_ns" | grep "opentelemetry-collector-deployment" || true
+    # Show DaemonSet status
+    kubectl get daemonsets -n "$obs_ns" | grep "opentelemetry-collector-daemonset" || true
+    # Show Services
+    kubectl get services -n "$obs_ns" | grep "opentelemetry-collector" || true
+    # Show Pods for both deployment and daemonset
+    kubectl get pods -n "$obs_ns" | grep "opentelemetry-collector" || true
 }
 
 # Main deployment function that orchestrates the appender-java deployment
@@ -465,27 +550,34 @@ deploy_appender() {
     echo ""
     
     # Navigate to the helmfile directory (robust, works from any directory)
-    script_dir=$(cd "$(dirname "$0")" && pwd)
-    echo "SCRIPT DIR: $script_dir"
-    echo "CD TO: $script_dir/../helmfile"
-    cd "$script_dir/../helmfile"
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    helmfile_dir="$script_dir/../helmfile"
+    
+    if [ ! -d "$helmfile_dir" ]; then
+        print_error "Helmfile directory not found: $helmfile_dir"
+        print_error "Current directory: $(pwd)"
+        print_error "Script directory: $script_dir"
+        exit 1
+    fi
+    
+    print_status "Navigating to helmfile directory: $helmfile_dir"
+    cd "$helmfile_dir"
     
     # Deploy using environment-specific helmfile configuration
     case $env in
         "dev")
             print_status "Using development environment configuration..."
             # Deploy using the development environment helmfile
-            helmfile -f environments/development/helmfile.yaml apply --selector name=appender-java-dev
+            helmfile -f environments/development/helmfile.yaml apply --selector name=appender-java
             ;;
         "prod")
             print_status "Using production environment configuration..."
             # Deploy using the production environment helmfile
-            helmfile -f environments/production/helmfile.yaml apply --selector name=appender-java-prod
+            helmfile -f environments/production/helmfile.yaml apply --selector name=appender-java
             ;;
     esac
     
     print_status "Appender-java deployment completed"
-    port_forward_and_open "$env"
 }
 
 # =============================================================================
@@ -587,18 +679,26 @@ remove_appender() {
         print_status "Deleting appender-java from $env environment..."
         
         # Navigate to helmfile directory (robust, works from any directory)
-        script_dir=$(cd "$(dirname "$0")" && pwd)
-        echo "SCRIPT DIR: $script_dir"
-        echo "CD TO: $script_dir/../helmfile"
-        cd "$script_dir/../helmfile"
+        script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        helmfile_dir="$script_dir/../helmfile"
+        
+        if [ ! -d "$helmfile_dir" ]; then
+            print_error "Helmfile directory not found: $helmfile_dir"
+            print_error "Current directory: $(pwd)"
+            print_error "Script directory: $script_dir"
+            exit 1
+        fi
+        
+        print_status "Navigating to helmfile directory: $helmfile_dir"
+        cd "$helmfile_dir"
         
         # Delete using environment-specific helmfile
         case $env in
             "dev")
-                helmfile -f environments/development/helmfile.yaml delete --selector name=appender-java-dev
+                helmfile -f environments/development/helmfile.yaml delete --selector name=appender-java
                 ;;
             "prod")
-                helmfile -f environments/production/helmfile.yaml delete --selector name=appender-java-prod
+                helmfile -f environments/production/helmfile.yaml delete --selector name=appender-java
                 ;;
         esac
         
@@ -619,8 +719,66 @@ restart_appender_pods() {
         print_status "Restarting pod for $instance_name..."
         kubectl rollout restart deployment/$instance_name -n $namespace
     done
+    sleep 2
+    # Wait for all appender-java pods to be restarted and running before continuing
+    print_status "Waiting for all appender-java pods to be restarted and running in namespace $namespace..."
+
+    for ((i=1; i<=instance_count; i++)); do
+        instance_name=$(printf "appender-java-%02d" $i)
+        print_status "Checking rollout status for deployment/$instance_name..."
+
+        # Wait for deployment rollout to complete (ensures pods are restarted)
+        if ! kubectl rollout status deployment/$instance_name -n $namespace --timeout=180s; then
+            print_error "Deployment $instance_name did not complete rollout in time."
+            continue
+        fi
+
+        # Get the list of pods for this deployment
+        pod_selector="app.kubernetes.io/instance=$instance_name"
+        pods=($(kubectl get pods -n $namespace -l "$pod_selector" -o jsonpath='{.items[*].metadata.name}'))
+
+        if [ ${#pods[@]} -eq 0 ]; then
+            print_warning "No pods found for $instance_name after rollout."
+            continue
+        fi
+
+        # For each pod, check that it was restarted recently and is running
+        for pod in "${pods[@]}"; do
+            # Get pod phase
+            phase=$(kubectl get pod "$pod" -n $namespace -o jsonpath='{.status.phase}')
+            # Get pod start time (in seconds since epoch)
+            start_time=$(kubectl get pod "$pod" -n $namespace -o jsonpath='{.status.startTime}')
+            start_time_epoch=$(date -d "$start_time" +%s 2>/dev/null)
+            now_epoch=$(date +%s)
+            # Consider "recent" as within the last 3 minutes (180 seconds)
+            if [[ "$phase" == "Running" && $((now_epoch - start_time_epoch)) -le 180 ]]; then
+                print_status "Pod $pod for $instance_name is running and was recently restarted."
+            elif [[ "$phase" == "Running" ]]; then
+                print_warning "Pod $pod for $instance_name is running, but may not have been restarted recently."
+            else
+                print_error "Pod $pod for $instance_name is not running (phase: $phase)."
+            fi
+        done
+
+        # Wait until all pods for this deployment are running
+        desired_replicas=$(kubectl get deployment $instance_name -n $namespace -o jsonpath='{.spec.replicas}' 2>/dev/null)
+        for attempt in {1..18}; do
+            running_count=$(kubectl get pods -n $namespace -l "$pod_selector" --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)
+            if [[ "$running_count" -ge "${desired_replicas:-1}" ]]; then
+                break
+            fi
+            sleep 5
+        done
+
+        # Final check
+        running_count=$(kubectl get pods -n $namespace -l "$pod_selector" --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)
+        if [[ "$running_count" -lt "${desired_replicas:-1}" ]]; then
+            print_warning "Not all pods for $instance_name are running after waiting."
+        else
+            print_status "All pods for $instance_name are running."
+        fi
+    done
     print_status "All appender-java pods have been restarted."
-    port_forward_and_open "$env"
 }
 
 # Utility function to open a URL in the default browser (cross-platform)
@@ -723,6 +881,55 @@ test_chain() {
     done
 }
 
+
+# Stub for clearing infrastructure
+clear_infrastructure() {
+    local env=$1
+    local prefix=""
+    if [ "$env" = "dev" ]; then
+        prefix="dev-"
+    elif [ "$env" = "prod" ]; then
+        prefix="prod-"
+    else
+        print_error "Unknown environment: $env"
+        return 1
+    fi
+
+    echo ""
+    print_warning "This will delete ALL infrastructure components in the ${prefix}* namespaces for environment: $env!"
+    read -p "Are you sure you want to continue? (y/N): " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        print_status "Aborted infrastructure deletion."
+        return 0
+    fi
+
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    helmfile_dir="$script_dir/../helmfile"
+    cd "$helmfile_dir"
+
+    # Delete in reverse dependency order
+    print_status "Deleting OpenTelemetry Operator..."
+    helmfile -e "$env" destroy --selector name="${prefix}opentelemetry-operator"
+
+    print_status "Deleting OpenTelemetry Collector (Deployment)..."
+    helmfile -e "$env" destroy --selector name="${prefix}opentelemetry-collector-deployment"
+
+    print_status "Deleting OpenTelemetry Collector (DaemonSet)..."
+    helmfile -e "$env" destroy --selector name="${prefix}opentelemetry-collector-daemonset"
+
+    print_status "Deleting cert-manager..."
+    helmfile -e "$env" destroy --selector name="${prefix}cert-manager"
+
+    print_status "Deleting Ingress-Nginx..."
+    helmfile -e "$env" destroy --selector name="${prefix}ingress-nginx"
+
+    print_status "Deleting ArgoCD..."
+    helmfile -e "$env" destroy --selector name="${prefix}argocd"
+
+    print_status "All infrastructure components deleted for environment: $env"
+}
+
+
 # =============================================================================
 # HELP AND DOCUMENTATION
 # =============================================================================
@@ -774,17 +981,22 @@ show_help() {
 execute_action() {
     local env=$1
     local action=$2
-    
     case ${action,,} in  # ${action,,} converts to lowercase
         "infra")
             # Infrastructure deployment workflow
             check_prerequisites
             check_cluster
             set_cluster_context
-            deploy_infrastructure
-            wait_for_infrastructure
-            show_infrastructure_status
+            deploy_infrastructure "$env"
+            wait_for_infrastructure "$env"
+            show_infrastructure_status "$env"
             print_status "Infrastructure deployment completed successfully!"
+            ;;
+        "clear")
+            check_prerequisites
+            check_cluster
+            set_cluster_context
+            clear_infrastructure "$env"
             ;;
         "deploy")
             # Full deployment workflow
@@ -795,13 +1007,14 @@ execute_action() {
             wait_for_appender "$env"
             show_status "$env"
             print_status "Appender-java deployment completed successfully!"
+            port_forward_and_open "$env"
             ;;
         "status")
             # Show current status
             check_cluster
             set_cluster_context
-            if [ "$env" = "infra" ]; then
-                show_infrastructure_status
+            if [[ "$env" == infra* ]]; then
+                show_infrastructure_status "$env"
             else
                 show_status "$env"
             fi
@@ -823,6 +1036,7 @@ execute_action() {
             check_cluster
             set_cluster_context
             restart_appender_pods "$env"
+            port_forward_and_open "$env"
             ;;
         "portforward")
             # Just port forward to first appender pod

@@ -9,13 +9,25 @@ repositories:
     url: https://argoproj.github.io/argo-helm
   - name: jetstack
     url: https://charts.jetstack.io
+  - name: open-telemetry
+    url: https://open-telemetry.github.io/opentelemetry-helm-charts
   - name: opentelemetry-helm
     url: https://open-telemetry.github.io/opentelemetry-helm-charts
 
+environments:
+  dev:
+    values:
+      - envPrefix: dev-
+  prod:
+    values:
+      - envPrefix: prod-
+
+---
+
 releases:
   # ArgoCD - GitOps Continuous Delivery
-  - name: argocd
-    namespace: argocd
+  - name: "{{ .Values.envPrefix }}argocd"
+    namespace: "{{ .Values.envPrefix }}argocd"
     createNamespace: true
     chart: argo/argo-cd
     version: 5.51.6
@@ -44,10 +56,11 @@ releases:
             create: true
         applicationSet:
           enabled: true
+        fullnameOverride: "argocd"
 
   # Ingress Controller
-  - name: ingress-nginx
-    namespace: ingress-nginx
+  - name: "{{ .Values.envPrefix }}ingress-nginx"
+    namespace: "{{ .Values.envPrefix }}ingress-nginx"
     createNamespace: true
     chart: ingress-nginx/ingress-nginx
     version: 4.7.1
@@ -56,35 +69,48 @@ releases:
           service:
             type: LoadBalancer
           replicaCount: 1
+        fullnameOverride: "ingress-nginx"
 
   # cert-manager
-  - name: cert-manager
-    namespace: cert-manager
+  - name: "{{ .Values.envPrefix }}cert-manager"
+    namespace: "{{ .Values.envPrefix }}cert-manager"
     createNamespace: true
     chart: jetstack/cert-manager
     version: v1.18.1
     set:
       - name: installCRDs
         value: true
+      - name: fullnameOverride
+        value: "cert-manager"
 
   # OpenTelemetry Collector
-  - name: opentelemetry-collector
-    namespace: observability
+  - name: "{{ .Values.envPrefix }}opentelemetry-collector-daemonset"
+    namespace: "{{ .Values.envPrefix }}observability"
     createNamespace: true
     chart: opentelemetry-helm/opentelemetry-collector
     version: 0.127.2
     needs:
-      - cert-manager/cert-manager
+      - "{{ .Values.envPrefix }}cert-manager/{{ .Values.envPrefix }}cert-manager"
     values:
-      - ./values/otel-collector/values.yaml
+      - ./values/otel-collector/daemonset/values.yaml
+
+  - name: "{{ .Values.envPrefix }}opentelemetry-collector-deployment"
+    namespace: "{{ .Values.envPrefix }}observability"
+    createNamespace: true
+    chart: opentelemetry-helm/opentelemetry-collector
+    version: 0.127.2
+    needs:
+      - "{{ .Values.envPrefix }}cert-manager/{{ .Values.envPrefix }}cert-manager"
+    values:
+      - ./values/otel-collector/deployment/values.yaml
 
   # OpenTelemetry Operator
-  - name: opentelemetry-operator
-    namespace: observability
+  - name: "{{ .Values.envPrefix }}opentelemetry-operator"
+    namespace: "{{ .Values.envPrefix }}observability"
     createNamespace: true
     chart: opentelemetry-helm/opentelemetry-operator
     version: 0.90.4
     needs:
-      - cert-manager/cert-manager
+      - "{{ .Values.envPrefix }}cert-manager/{{ .Values.envPrefix }}cert-manager"      
     values:
           - ./values/otel-operator/values.yaml

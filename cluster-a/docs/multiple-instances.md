@@ -14,11 +14,11 @@ The multiple instances feature allows you to deploy multiple copies of the appen
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Kubernetes Cluster                        │
-├─────────────────────────────────────────────────────────────┤
-│  Namespace: appender-java-{env}                             │
-│                                                             │
+┌────────────────────────────────────────────────────────────┐
+│                    Kubernetes Cluster                      │
+├────────────────────────────────────────────────────────────┤
+│  Namespace: {env}-appender-java                            │
+│                                                            │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
 │  │ appender-   │  │ appender-   │  │ appender-   │         │
 │  │ java-01     │──│ java-02     │──│ java-03     │         │
@@ -50,7 +50,7 @@ http://{next-instance-name}-service.{namespace}.svc.cluster.local:{next-instance
 
 Example for appender-java-01:
 ```
-http://appender-java-02-service.appender-java-dev.svc.cluster.local:8081/append
+http://appender-java-02-service.dev-appender-java.svc.cluster.local:8081/append
 ```
 
 ## Configuration
@@ -151,31 +151,31 @@ Use the provided Bash script to manage instances:
 
 ```bash
 # List all deployments
-kubectl get deployments -n appender-java-dev
+kubectl get deployments -n dev-appender-java
 
 # List all services
-kubectl get services -n appender-java-dev
+kubectl get services -n dev-appender-java
 
 # Get logs from specific instance
-kubectl logs -n appender-java-dev deployment/appender-java-01
+kubectl logs -n dev-appender-java deployment/appender-java-01
 
 # Scale specific instance
-kubectl scale deployment appender-java-01 -n appender-java-dev --replicas=2
+kubectl scale deployment appender-java-01 -n dev-appender-java --replicas=2
 
 # Check instance health
-kubectl get pods -n appender-java-dev --selector=app.kubernetes.io/name=appender-java
+kubectl get pods -n dev-appender-java --selector=app.kubernetes.io/name=appender-java
 
 # Check target URL for specific instance
-kubectl get pod -n appender-java-dev -l app.kubernetes.io/instance=appender-java-01 -o jsonpath='{.spec.containers[0].env[?(@.name=="TARGET_URL")].value}'
+kubectl get pod -n dev-appender-java -l app.kubernetes.io/instance=appender-java-01 -o jsonpath='{.spec.containers[0].env[?(@.name=="TARGET_URL")].value}'
 
 # Check node type for specific instance
-kubectl get pod -n appender-java-dev -l app.kubernetes.io/instance=appender-java-01 -o jsonpath='{.spec.containers[0].env[?(@.name=="NODE_TYPE")].value}'
+kubectl get pod -n dev-appender-java -l app.kubernetes.io/instance=appender-java-01 -o jsonpath='{.spec.containers[0].env[?(@.name=="NODE_TYPE")].value}'
 
 # Verify all target URLs and node types
 for i in {01..03}; do
   echo "appender-java-$i:"
-  echo "  NODE_TYPE: $(kubectl get pod -n appender-java-dev -l app.kubernetes.io/instance=appender-java-$i -o jsonpath='{.spec.containers[0].env[?(@.name=="NODE_TYPE")].value}' 2>/dev/null)"
-  echo "  TARGET_URL: $(kubectl get pod -n appender-java-dev -l app.kubernetes.io/instance=appender-java-$i -o jsonpath='{.spec.containers[0].env[?(@.name=="TARGET_URL")].value}' 2>/dev/null)"
+  echo "  NODE_TYPE: $(kubectl get pod -n dev-appender-java -l app.kubernetes.io/instance=appender-java-$i -o jsonpath='{.spec.containers[0].env[?(@.name=="NODE_TYPE")].value}' 2>/dev/null)"
+  echo "  TARGET_URL: $(kubectl get pod -n dev-appender-java -l app.kubernetes.io/instance=appender-java-$i -o jsonpath='{.spec.containers[0].env[?(@.name=="TARGET_URL")].value}' 2>/dev/null)"
   echo
 done
 ```
@@ -235,16 +235,16 @@ Ports are allocated sequentially starting from the base port:
 ### Target URL Examples
 
 For a 3-instance development setup:
-- **appender-java-01** (begin): `http://appender-java-02-service.appender-java-dev.svc.cluster.local:8081/append`
-- **appender-java-02** (link): `http://appender-java-03-service.appender-java-dev.svc.cluster.local:8082/append`
+- **appender-java-01** (begin): `http://appender-java-02-service.dev-appender-java.svc.cluster.local:8081/append`
+- **appender-java-02** (link): `http://appender-java-03-service.dev-appender-java.svc.cluster.local:8082/append`
 - **appender-java-03** (end): No TARGET_URL
 
 For a 10-instance production setup:
-- **appender-java-01** (begin): `http://appender-java-02-service.appender-java-prod.svc.cluster.local:8081/append`
-- **appender-java-02** (link): `http://appender-java-03-service.appender-java-prod.svc.cluster.local:8082/append`
-- **appender-java-03** (link): `http://appender-java-04-service.appender-java-prod.svc.cluster.local:8083/append`
+- **appender-java-01** (begin): `http://appender-java-02-service.prod-appender-java.svc.cluster.local:8081/append`
+- **appender-java-02** (link): `http://appender-java-03-service.prod-appender-java.svc.cluster.local:8082/append`
+- **appender-java-03** (link): `http://appender-java-04-service.prod-appender-java.svc.cluster.local:8083/append`
 - ...
-- **appender-java-09** (link): `http://appender-java-10-service.appender-java-prod.svc.cluster.local:8089/append`
+- **appender-java-09** (link): `http://appender-java-10-service.prod-appender-java.svc.cluster.local:8089/append`
 - **appender-java-10** (end): No TARGET_URL
 
 ## Monitoring and Observability
@@ -266,13 +266,13 @@ Each instance has independent health checks:
 Services can be discovered using:
 ```bash
 # Get service endpoints
-kubectl get endpoints -n appender-java-dev
+kubectl get endpoints -n dev-appender-java
 
 # Port forward to specific instance
-kubectl port-forward service/appender-java-01-service 8080:8080 -n appender-java-dev
+kubectl port-forward service/appender-java-01-service 8080:8080 -n dev-appender-java
 
 # Test the chain by following the target URLs
-kubectl exec -n appender-java-dev deployment/appender-java-01 -- curl -s $TARGET_URL
+kubectl exec -n dev-appender-java deployment/appender-java-01 -- curl -s $TARGET_URL
 ```
 
 ## Scaling Strategies
@@ -324,22 +324,22 @@ helmfile apply
 
 ```bash
 # Check all instances status
-kubectl get all -n appender-java-dev
+kubectl get all -n dev-appender-java
 
 # Check events
-kubectl get events -n appender-java-dev --sort-by='.lastTimestamp'
+kubectl get events -n dev-appender-java --sort-by='.lastTimestamp'
 
 # Check resource usage
-kubectl top pods -n appender-java-dev
+kubectl top pods -n dev-appender-java
 
 # Check service endpoints
-kubectl get endpoints -n appender-java-dev
+kubectl get endpoints -n dev-appender-java
 
 # Verify target URLs
 for i in {01..03}; do
   echo "appender-java-$i:"
-  echo "  NODE_TYPE: $(kubectl get pod -n appender-java-dev -l app.kubernetes.io/instance=appender-java-$i -o jsonpath='{.spec.containers[0].env[?(@.name=="NODE_TYPE")].value}' 2>/dev/null)"
-  echo "  TARGET_URL: $(kubectl get pod -n appender-java-dev -l app.kubernetes.io/instance=appender-java-$i -o jsonpath='{.spec.containers[0].env[?(@.name=="TARGET_URL")].value}' 2>/dev/null)"
+  echo "  NODE_TYPE: $(kubectl get pod -n dev-appender-java -l app.kubernetes.io/instance=appender-java-$i -o jsonpath='{.spec.containers[0].env[?(@.name=="NODE_TYPE")].value}' 2>/dev/null)"
+  echo "  TARGET_URL: $(kubectl get pod -n dev-appender-java -l app.kubernetes.io/instance=appender-java-$i -o jsonpath='{.spec.containers[0].env[?(@.name=="TARGET_URL")].value}' 2>/dev/null)"
   echo
 done
 ```
@@ -395,10 +395,10 @@ instances:
 helmfile apply
 
 # Verify all instances are running
-kubectl get pods -n appender-java-dev
+kubectl get pods -n dev-appender-java
 
 # Test the chain
-kubectl exec -n appender-java-dev deployment/appender-java-01 -- curl -s $TARGET_URL
+kubectl exec -n dev-appender-java deployment/appender-java-01 -- curl -s $TARGET_URL
 ```
 
 ### Step 4: Scale Up

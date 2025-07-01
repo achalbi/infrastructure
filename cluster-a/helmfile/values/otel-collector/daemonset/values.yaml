@@ -1,0 +1,65 @@
+# Reference documentation: https://opentelemetry.io/docs/platforms/kubernetes/getting-started/
+
+# OpenTelemetry Collector values
+mode: daemonset  # deployment or daemonset (daemonset is for kubernetes)   
+
+presets:
+  # enables the k8sattributesprocessor and adds it to the traces, metrics, and logs pipelines
+  kubernetesAttributes:
+    enabled: true
+  # enables the kubeletstatsreceiver and adds it to the metrics pipelines
+  kubeletMetrics:
+    enabled: true
+  # Enables the filelogreceiver and adds it to the logs pipelines
+  logsCollection:
+    enabled: true
+
+# OpenTelemetry Collector configuration
+config:
+
+  processors:
+    batch:
+      timeout: 1s
+      send_batch_size: 1024
+    memory_limiter:
+      check_interval: 1s
+      limit_mib: 900
+
+  exporters:
+    # debug: to be not present in production value file
+    debug:
+      verbosity: detailed
+    otlp:
+      endpoint: "http://localhost:4317"
+      tls:
+        insecure: true
+
+  service:
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [batch, memory_limiter]
+        exporters: [debug]
+      metrics:
+        receivers: [otlp]
+        processors: [batch, memory_limiter]
+        exporters: [debug]
+      logs:
+        receivers: [otlp]
+        processors: [batch, memory_limiter]
+        exporters: [debug]
+
+resources:
+  limits:
+    memory: 1Gi
+  requests:
+    cpu: 100m
+
+image:
+  repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
+  pullPolicy: Always
+
+command:
+  name: "otelcol-k8s"
+
+fullnameOverride: "opentelemetry-collector-daemonset"

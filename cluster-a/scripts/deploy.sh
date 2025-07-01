@@ -90,12 +90,74 @@ deploy_applications() {
     print_status "Adding Helm repositories..."
     helmfile repos
     
-    # Deploy applications
-    print_status "Deploying applications..."
+    # Deploy core infrastructure first (ArgoCD, cert-manager, etc.)
+    print_status "Deploying core infrastructure..."
+    helmfile apply --selector name=argocd
+    helmfile apply --selector name=cert-manager
+    helmfile apply --selector name=ingress-nginx
+    
+    # Wait for cert-manager to be ready
+    print_status "Waiting for cert-manager to be ready..."
+    kubectl wait --for=condition=available --timeout=300s deployment/cert-manager -n cert-manager
+    kubectl wait --for=condition=available --timeout=300s deployment/cert-manager-cainjector -n cert-manager
+    kubectl wait --for=condition=available --timeout=300s deployment/cert-manager-webhook -n cert-manager
+    
+    # Deploy OpenTelemetry components
+    print_status "Deploying OpenTelemetry components..."
+    helmfile apply --selector name=opentelemetry-collector
+    helmfile apply --selector name=opentelemetry-operator
+    
+    # Wait for OpenTelemetry to be ready
+    print_status "Waiting for OpenTelemetry to be ready..."
+    kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-collector -n observability || true
+    kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator-controller-manager -n observability || true
+    
+    # Deploy pre-install charts first (OpenTelemetry instrumentation)
+    print_status "Deploying pre-install charts (OpenTelemetry instrumentation)..."
+    helmfile apply --selector name=pre-install
+    
+    # Wait for pre-install resources to be ready
+    print_status "Waiting for pre-install resources to be ready..."
+    sleep 10  # Give time for OpenTelemetry instrumentation to be created
+    
+    # Deploy appender-java applications
+    print_status "Deploying appender-java applications..."
+    helmfile apply --selector name=appender-java
+    
+    # Deploy all remaining applications
+    print_status "Deploying remaining applications..."
     helmfile apply
     
     cd ..
     print_status "Application deployment completed."
+}
+
+# Deploy environment-specific applications
+deploy_environment() {
+    local environment=${1:-development}
+    
+    print_status "Deploying $environment environment..."
+    
+    cd helmfile/environments/$environment
+    
+    # Deploy pre-install chart first (OpenTelemetry instrumentation)
+    print_status "Deploying pre-install chart for $environment (OpenTelemetry instrumentation)..."
+    helmfile apply --selector name=pre-install-$environment
+    
+    # Wait for pre-install to be ready
+    print_status "Waiting for pre-install resources to be ready..."
+    sleep 10
+    
+    # Deploy appender-java application
+    print_status "Deploying appender-java for $environment..."
+    helmfile apply --selector name=appender-java-$environment
+    
+    # Deploy all environment applications
+    print_status "Deploying all $environment applications..."
+    helmfile apply
+    
+    cd ../../..
+    print_status "$environment environment deployment completed."
 }
 
 # Main deployment function
@@ -116,6 +178,9 @@ main() {
     # Deploy applications
     deploy_applications
     
+    # Deploy environment-specific applications
+    deploy_environment $environment
+    
     print_status "Deployment completed successfully!"
     
     # Display useful information
@@ -123,6 +188,13 @@ main() {
     echo "  kubectl get pods -n argocd"
     echo "  kubectl port-forward svc/argocd-server 8080:80 -n argocd"
     echo "  helmfile status -f helmfile/helmfile.yaml"
+    echo "  helmfile status -f helmfile/environments/$environment/helmfile.yaml"
+    
+    # Display application status
+    print_status "Application Status:"
+    echo "  kubectl get pods -n appender-java-$environment"
+    echo "  kubectl get configmaps -n appender-java-$environment"
+    echo "  kubectl get secrets -n appender-java-$environment"
 }
 
 # Run main function with all arguments

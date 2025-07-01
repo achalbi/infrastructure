@@ -25,22 +25,42 @@ readinessProbe:
   periodSeconds: 5
 
 ingress:
-  enabled: true
-  host: dev.example.com 
+  enabled: false
+  host: ""
   annotations: {}
-  ingressClassName: nginx
 
+# OpenTelemetry configuration
+opentelemetry:
+  enabled: true
+  endpoint: "http://opentelemetry-collector.observability.svc.cluster.local:4317"
+  serviceName: "appender-java"
+  serviceVersion: "1.0.0"
+
+
+# Resource limits and requests
 resources:
   limits:
-    memory: 256Mi
+    cpu: 1000m
+    memory: 1Gi
   requests:
-    cpu: 100m
+    cpu: 500m
+    memory: 512Mi
+
+# Affinity and tolerations
+affinity: {}
+tolerations: []
+nodeSelector: {}
+
+# Service account
+serviceAccount:
+  create: true
+  name: ""
 
 springProfilesActive: prod
 
 otelAutoInstrumentation:
   enabled: "true"
   instrumentationName: java-instrumentation
-  namespace: appender-java-dev
-  exporterEndpoint: http://opentelemetry-collector.observability:4317
+  namespace: dev-appender-java
+  exporterEndpoint: http://opentelemetry-collector.dev-observability:4317
   javaAgentImage: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-java:latest

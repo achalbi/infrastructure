@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: appender-java-prod
+  name: appender-java
   namespace: argocd
 spec:
   project: default
@@ -11,7 +11,7 @@ spec:
     path: cluster-a/helmfile/environments/production
   destination:
     server: https://kubernetes.default.svc
-    namespace: appender-java-prod
+    namespace: prod-appender-java
   syncPolicy:
     automated:
       prune: true

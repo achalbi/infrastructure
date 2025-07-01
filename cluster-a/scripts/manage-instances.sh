@@ -32,8 +32,8 @@ print_error() {
 get_namespace() {
     local env=$1
     case ${env,,} in
-        "dev") echo "appender-java-dev" ;;
-        "prod") echo "appender-java-prod" ;;
+        "dev") echo "dev-appender-java" ;;
+        "prod") echo "prod-appender-java" ;;
         *) echo "appender-java" ;;
     esac
 }
