@@ -1,0 +1,13 @@
+repositories:
+  - name: ingress-nginx
+    url: https://kubernetes.github.io/ingress-nginx
+
+releases:
+  - name: "ingress-nginx"
+    namespace: ingress-nginx
+    createNamespace: true
+    chart: ingress-nginx/ingress-nginx
+    version: 4.12.3
+    values:
+      - ../../value-files/nginx/values.yaml
+      - ../../value-files/nginx/values.dev.yaml

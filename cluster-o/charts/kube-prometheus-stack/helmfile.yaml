@@ -1,0 +1,60 @@
+repositories:
+- name: prometheus-community
+  url: https://prometheus-community.github.io/helm-charts
+
+releases:
+- name: prometheus
+  chart: prometheus-community/kube-prometheus-stack
+  namespace: observability
+  version: 75.7.0
+  # add custom scape config that will be merged with the default scape config
+  values:
+    - ../../value-files/kube-prometheus-stack/values.yaml
+    - ../../value-files/kube-prometheus-stack/values.dev.yaml
+  # Helmfile will timeout after 300 seconds (5 minutes) by default now. If you need to override this, you can use the timeout option.
+  timeout: 300
+  #  Helmfile will skip the validation step, allowing you to deploy Helm charts without checking their validity. This option can be useful when you have CRDs to be installed first.
+  disableValidation: true
+  # disableValidationOnInstall: true
+
+
+## to handle crds created before install
+
+#  hooks:
+#     # Create CRDs separately in helmfile presync hooks
+#     # https://github.com/roboll/helmfile/issues/1124
+#     # https://github.com/helm/helm/issues/7449
+#     # https://github.com/cloudposse/helmfiles/blob/59490fd2599d6113a14103be919985f9fbcea73a/releases/prometheus-operator.yaml
+#     # Hooks associated to presync events are triggered before each release is applied to the remote cluster.
+#     # This is the ideal event to execute any commands that may mutate the cluster state as it
+#     # will not be run for read-only operations like lint, diff or template.
+#     # These hook install the prometheuses.monitoring.coreos.com CustomResourceDefinition if needed
+#     - events: ["presync"]
+#       command: "/bin/sh"
+#       args: ["-c", "kubectl get crd prometheuses.monitoring.coreos.com >/dev/null 2>&1 || \
+#              { helm pull stable/prometheus-operator --version {{`{{ .Release.Version }}`}} && tar -Oxzf prometheus-operator-{{`{{ .Release.Version }}`}}.tgz prometheus-operator/crds/crd-prometheus.yaml | kubectl apply -f -; }"]
+#     # This hoook installs the alertmanagers.monitoring.coreos.com CustomResourceDefinition if needed
+#     - events: ["presync"]
+#       command: "/bin/sh"
+#       args: ["-c", "kubectl get crd alertmanagers.monitoring.coreos.com >/dev/null 2>&1 || \
+#              { helm pull stable/prometheus-operator --version {{`{{ .Release.Version }}`}} && tar -Oxzf prometheus-operator-{{`{{ .Release.Version }}`}}.tgz prometheus-operator/crds/crd-alertmanager.yaml | kubectl apply -f -; }"]
+#     # This hoook installs the prometheusrules.monitoring.coreos.com CustomResourceDefinition if needed
+#     - events: ["presync"]
+#       command: "/bin/sh"
+#       args: ["-c", "kubectl get crd prometheusrules.monitoring.coreos.com >/dev/null 2>&1 || \
+#              { helm pull stable/prometheus-operator --version {{`{{ .Release.Version }}`}} && tar -Oxzf prometheus-operator-{{`{{ .Release.Version }}`}}.tgz prometheus-operator/crds/crd-prometheusrules.yaml | kubectl apply -f -; }"]
+#     # This hoook installs the servicemonitors.monitoring.coreos.com CustomResourceDefinition if needed
+#     - events: ["presync"]
+#       command: "/bin/sh"
+#       args: ["-c", "kubectl get crd servicemonitors.monitoring.coreos.com >/dev/null 2>&1 || \
+#              { helm pull stable/prometheus-operator --version {{`{{ .Release.Version }}`}} && tar -Oxzf prometheus-operator-{{`{{ .Release.Version }}`}}.tgz prometheus-operator/crds/crd-servicemonitor.yaml | kubectl apply -f -; }"]
+#     # This hoook installs the podmonitors.monitoring.coreos.com CustomResourceDefinition if needed
+#     - events: ["presync"]
+#       command: "/bin/sh"
+#       args: ["-c", "kubectl get crd podmonitors.monitoring.coreos.com >/dev/null 2>&1 || \
+#              { helm pull stable/prometheus-operator --version {{`{{ .Release.Version }}`}} && tar -Oxzf prometheus-operator-{{`{{ .Release.Version }}`}}.tgz prometheus-operator/crds/crd-podmonitor.yaml | kubectl apply -f -; }"]
+#     # This hoook installs the thanosrulers.monitoring.coreos.com CustomResourceDefinition if needed
+#     - events: ["presync"]
+#       command: "/bin/sh"
+#       args: ["-c", "kubectl get crd thanosrulers.monitoring.coreos.com >/dev/null 2>&1 || \
+#              { helm pull stable/prometheus-operator --version {{`{{ .Release.Version }}`}} && tar -Oxzf prometheus-operator-{{`{{ .Release.Version }}`}}.tgz prometheus-operator/crds/crd-thanosrulers.yaml | kubectl apply -f -; }"]

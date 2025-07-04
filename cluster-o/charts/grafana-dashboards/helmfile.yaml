@@ -1,0 +1,11 @@
+releases:
+  - name: grafana-dashboards
+    namespace: observability
+    chart: .
+    version: 0.0.1
+    set:
+      - name: namespace
+        value: observability
+      - name: env
+        value: local
+  

@@ -1,0 +1,179 @@
+admin:
+  existingSecret: "grafana-secret"
+  userKey: grafana_username
+  passwordKey: "grafana_password"
+
+assertNoLeakedSecrets: false
+
+persistence:
+  enabled: false
+  accessModes:
+    - ReadWriteOnce  # Use the appropriate access mode for your environment
+  size: 10Gi  # Specify the desired size for the PVC
+
+grafana.ini:
+  feature_toggles:
+    enable: traceToMetrics, traceToLogsV2, traceQuery, nodeGraph, spanBar, traceToProfiles, tracesEmbeddedFlameGraph
+  dashboards:
+    default_home_dashboard_path: /var/lib/grafana/dashboards/grafana-dashboards/home-page.json
+  tracing:
+    opentelemetry:
+      otlp:
+        address: opentelemetry-collector.observability.svc.cluster.local:4318
+  auth:
+    anonymous:
+      enabled: true
+      org_role: Admin
+      org_name: grafana.telemetrix.in
+      org_id: 1
+env:
+  JAEGER_AGENT_HOST: jaeger-agent
+  JAEGER_AGENT_PORT: 6831
+
+# extraSecretMounts:
+#   - name: grafana-contact-points
+#     secretName: grafana-contact-points
+#     mountPath: /etc/grafana/provisioning/alerting/contact-points.json
+#     subPath: contact-points.json
+#     readOnly: true
+
+service:
+  enabled: true
+  type: LoadBalancer
+  port: 3000
+
+ingress:
+  enabled: true
+  hosts:
+    - grafana.telemetrix.in
+  annotations: {}
+  ingressClassName: nginx
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  # annotations:
+  #   nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  #   nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Loki
+        type: loki
+        uid: loki
+        access: proxy
+        url: http://loki-gateway:80
+        isDefault: false
+        editable: true
+        jsonData:
+          timeout: 120s
+          derivedFields:
+          - datasourceUid: tempo
+            matcherRegex: ((\d+|[a-z]+){32})
+            name: TraceID
+#            matcherRegex: "traceID=(\\w+)"
+            # url will be interpreted as query for the datasource
+            url: '$${__value.raw}'
+            # optional for URL Label to set a custom display label for the link.
+            urlDisplayLabel: 'View Trace'
+
+          # Field with external link.
+#          - matcherRegex: ((\d+|[a-z]+){32})
+#            name: TraceID_External
+#            url: 'https://{{ env "ENVIRONMENT_NAME" | default "local" }}-jaeger.cats.{{ env "ENVIRONMENT_NAME" | default "local" }}.aws.boerse.dir/trace/$${__value.raw}'
+#            urlDisplayLabel: 'View Trace in Jaeger UI'
+      - name: Tempo
+        type: tempo
+        uid: tempo
+        access: proxy
+        url: http://tempo.observability:3200
+        basicAuth: false
+        isDefault: false
+        editable: true
+        jsonData:
+          timeout: 120s
+          httpMethod: GET
+          serviceMap:
+            datasourceUid: prometheus
+          tracesToLogsV2:
+            # Field with an internal link pointing to a logs data source in Grafana.
+            # datasourceUid value must match the uid value of the logs data source.
+            datasourceUid: loki
+            spanStartTimeShift: '-5m'
+            spanEndTimeShift: '5m'
+            tags: [ { key: 'application' }, { key: 'app' }, { key: 'job' }, { key: 'pod' }, { key: 'namespace' }, { key: 'container' },{ key: 'traceid' }, { key: 'http.status', value: 'http_status' }, { key: 'component' } ]
+            filterByTraceID: false
+            filterBySpanID: false
+            customQuery: true
+            query: '{job=~".+"} |="$${__span.spanId}"'
+          tracesToMetrics:
+            datasourceUid: 'prometheus'
+            spanStartTimeShift: '-5m'
+            spanEndTimeShift: '5m'
+            tags: [ { key: 'service.name', value: 'service' },{ key: 'k8s.pod', value: 'pod' }, { key: 'job' } ]
+            queries:
+              - name: 'Query'
+                query: 'sum(rate(traces_spanmetrics_latency_bucket{$$__tags}[5m]))'
+#          tracesToProfiles:
+#            datasourceUid: 'pyroscope'
+#            tags: [ { key: 'host.name', value: 'hostname' },{ key: 'service.name', value: 'service' },{ key: 'k8s.pod', value: 'pod' }, { key: 'job' } ]
+#            profileTypeId: 'process_cpu:cpu:nanoseconds:cpu:nanoseconds'
+#            customQuery: false
+          nodeGraph:
+            enabled: true
+          traceQuery:
+            timeShiftEnabled: true
+            spanStartTimeShift: '-5m'
+            spanEndTimeShift: '5m'
+          lokiSearch:
+            datasourceUid: 'loki'
+          spanBar:
+            type: 'Tag'
+            tag: 'http.path'
+      - name: Pyroscope
+        type: 'grafana-pyroscope-datasource'
+        uid: 'pyroscope'
+        url: http://pyroscope.observability:4040
+        isDefault: false
+        editable: true
+        jsonData:
+         httpHeaderName1: "X-Scope-OrgID"
+         minStep: 15s
+        secureJsonData:
+         httpHeaderValue1: "anonymous"
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        access: proxy
+        url: http://prometheus-prometheus:9090
+        isDefault: false
+        editable: true
+        jsonData:
+          maxLines: 1000
+
+sidecar:
+  dashboards:
+    enabled: true
+    label: app
+    labelValue: grafana-dashboards
+    folder: /var/lib/grafana/dashboards/grafana-dashboards
+    provider:
+        allowUiUpdates: true
+
+  alerts:
+    enabled: false
+    # label: grafana_alert
+    # labelValue: grafana-alerting
+    # resource: both
+    # reloadURL: "http://admin:admin@grafana.observability.svc.cluster.local:3000/api/admin/provisioning/alerting/reload"
+  
+serviceMonitor:
+  ## If true, a ServiceMonitor CRD is created for a prometheus operator
+  ## https://github.com/coreos/prometheus-operator
+  ##
+  enabled: true
+  path: /metrics
+  namespace: observability
+  labels:
+    prometheus: prometheus-prometheus
+  interval: 30s 

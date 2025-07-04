@@ -1,0 +1,10 @@
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: grafana-contact-points
+#   namespace: observability
+#   labels:
+#     app: grafana
+# type: Opaque
+# data:
+#   contact-points.json: e2FwaVZlcnNpb246IDEsIGNvbnRhY3RQb2ludHM6IFt7b3JnSWQ6IDEsIG5hbWU6IEFsZXJ0IENvbmZpZ3VyYXRpb24sIHJlY2VpdmVyczogW3t1aWQ6IGNlZXA5anl4Y2E5czFmLCB0eXBlOiBvcHNnZW5pZSwgc2V0dGluZ3M6IHthcGlLZXk6ICwgYXBpVXJsOiAsIGF1dG9DbG9zZTogZmFsc2UsIG92ZXJyaWRlUHJpb3JpdHk6IGZhbHNlfSwgZGlzYWJsZVJlc29sdmVNZXNzYWdlOiBmYWxzZX1dfV19

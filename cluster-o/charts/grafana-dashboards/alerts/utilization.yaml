@@ -1,0 +1,269 @@
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: Utilization
+      folder: Nodes
+      interval: 5m
+      rules:
+        - uid: belqrmred1gaod
+          title: Nodes CPU Utilization
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: prometheus
+              model:
+                datasource:
+                    type: prometheus
+                    uid: prometheus
+                editorMode: code
+                expr: (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)) * 100
+                instant: false
+                interval: ""
+                intervalMs: 15000
+                legendFormat: '{{instance}}'
+                maxDataPoints: 43200
+                range: true
+                refId: A
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - B
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 70
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          dashboardUid: adrcfc2ow6o74b
+          panelId: 3
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 5m
+          annotations:
+            __dashboardUid__: adrcfc2ow6o74b
+            __panelId__: "14"
+            description: Node CPU Utilization - {{if gt $values.B.Value 90.0}}Critical{{else if gt $values.B.Value 80.0}}Warning{{else}}Info{{end}}, Consumption value is {{ printf "%0.2f" $values.B.Value}} %
+            runbook_url: ""
+            summary: Node CPU Utilization is {{ printf "%0.2f" $values.B.Value }} %
+          labels:
+            severity: '{{if gt $$values.B.Value 90.0}}Critical{{else if gt $$values.B.Value 80.0}}Warning{{else}}Info{{end}}'
+            team: operations
+          isPaused: false
+        - uid: belqrmred1gqod
+          title: Nodes Memory Utilization
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: prometheus
+              model:
+                datasource:
+                    type: prometheus
+                    uid: prometheus
+                editorMode: code
+                expr: ((sum(node_memory_MemTotal_bytes{container="node-exporter"}) by (instance) - sum(node_memory_MemFree_bytes{container="node-exporter"}) by (instance) - sum(node_memory_Cached_bytes{container="node-exporter"}) by (instance) - sum(node_memory_Buffers_bytes{container="node-exporter"}) by (instance)) / sum(node_memory_MemTotal_bytes{container="node-exporter"}) by (instance)) *100
+                instant: false
+                interval: ""
+                intervalMs: 15000
+                legendFormat: '{{instance}}'
+                maxDataPoints: 43200
+                range: true
+                refId: A
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - B
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 70
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          dashboardUid: adrcfc2ow6o74b
+          panelId: 3
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 5m
+          annotations:
+            __dashboardUid__: adrcfc2ow6o74b
+            __panelId__: "3"
+            description: Node Memory is filling up - {{if gt $values.B.Value 90.0}}Critical{{else if gt $values.B.Value 80.0}}Warning{{else}}Info{{end}}, Consumption value is {{ printf "%0.2f" $values.B.Value }} %
+            runbook_url: ""
+            summary: Node Memory Utilization is {{ printf "%0.2f" $values.B.Value }} %
+          labels:
+            severity: '{{if gt $$values.B.Value 90.0}}Critical{{else if gt $$values.B.Value 80.0}}Warning{{else}}Info{{end}}'
+            team: operations
+          isPaused: false
+        - uid: belqrmred1gbod
+          title: Nodes Disk Utilization
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: prometheus
+              model:
+                datasource:
+                    type: prometheus
+                    uid: prometheus
+                editorMode: code
+                expr: sum(1- (node_filesystem_free_bytes{fstype="xfs"}/ node_filesystem_size_bytes{fstype="xfs"})) by (instance) *100
+                instant: false
+                interval: ""
+                intervalMs: 15000
+                legendFormat: '{{instance}}'
+                maxDataPoints: 43200
+                range: true
+                refId: A
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - B
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 70
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          dashboardUid: adrcfc2ow6o74b
+          panelId: 3
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 5m
+          annotations:
+            __dashboardUid__: adrcfc2ow6o74b
+            __panelId__: "15"
+            description: Node Disk is filling up - {{if gt $values.B.Value 90.0}}Critical{{else if gt $values.B.Value 80.0}}Warning{{else}}Info{{end}}, Consumption value is {{ printf "%0.2f" $values.B.Value }} %
+            runbook_url: ""
+            summary: Node Disk Utilization is {{ printf "%0.2f" $values.B.Value }} %
+          labels:
+            severity: '{{if gt $$values.B.Value 90.0}}Critical{{else if gt $$values.B.Value 80.0}}Warning{{else}}Info{{end}}'
+            team: operations
+          isPaused: false
+

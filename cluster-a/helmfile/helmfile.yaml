@@ -63,13 +63,9 @@ releases:
     namespace: "{{ .Values.envPrefix }}ingress-nginx"
     createNamespace: true
     chart: ingress-nginx/ingress-nginx
-    version: 4.7.1
+    version: 4.12.3
     values:
-      - controller:
-          service:
-            type: LoadBalancer
-          replicaCount: 1
-        fullnameOverride: "ingress-nginx"
+      - ./values/nginx/values.yaml
 
   # cert-manager
   - name: "{{ .Values.envPrefix }}cert-manager"

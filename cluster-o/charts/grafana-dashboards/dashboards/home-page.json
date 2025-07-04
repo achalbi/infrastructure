@@ -1,0 +1,213 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 26,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "dashboard",
+        "uid": "-- Dashboard --"
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "  <div style=\"text-align: center;\">\r\n    <hr style=\"border: none; border-top: 1px solid #6495ED; width: 100%; margin: 10px auto;\">\r\n    <h3>World of CATS FleXrouter</h3>\r\n    <hr style=\"border: none; border-top: 1px solid #6495ED; width: 100%; margin: 10px auto;\">\r\n  </div>",
+        "mode": "html"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "refId": "A"
+        }
+      ],
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "dashboard",
+        "uid": "-- Dashboard --"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 3
+      },
+      "id": 5,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "[Application Logs](https://${__org.name}/d/bb1e0cb8-6289-4175-b2c8-d249a8fb4793/application-logs)\n\n---\n[Application Logs Detailed](https://${__org.name}/d/NClZGd6nA/kubernetes-logs)\n\n---\n\n[Keycloak Metrics](https://${__org.name}/d/keycloak-dashboard/keycloak-metrics-dashboard)\n\n---\n\n[JVM Micrometer](https://${__org.name}/d/OKDf5q0Iz/pods-overview)\n\n---\n[Spring Boot Observability](https://${__org.name}/d/dLsDQIUnzb/spring-boot-observability)\n\n---\n\n[Application Connection Status](https://${__org.name}/d/fen11r0gvjrb4c/application-connection-status)\n\n---\n\n\n\n\n\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "Application Overview",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "dashboard",
+        "uid": "-- Dashboard --"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 8,
+        "y": 3
+      },
+      "id": 1,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "[Cluster Overview](https://${__org.name}/d/adrcfc2ow6o74b/eks-cluster-overview)\n\n---\n[POD Overview](https://${__org.name}/d/OKDf5q0Iz/pods-overview)\n\n---\n[Nodes Overview](https://${__org.name}/d/bf3fe8a6-712e-4494-8c34-ecb1505bc333/nodes-overview)\n\n---\n\n[Kube State Metrics](https://${__org.name}/d/garysdevil-kube-state-metrics-v2/kube-state-metrics-v2)\n\n---\n\n[K8s Events](https://${__org.name}/d/X35DJ1P4k/kubernetes-events)\n\n---",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "EKS Cluster",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "dashboard",
+        "uid": "-- Dashboard --"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 3
+      },
+      "id": 2,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "\n\n[Traces Overview](https://${__org.name}/d/fdyuyhppi01z4e/traces-overview?orgId=1)\n\n---\n\n[RabbitMq Overview](https://${__org.name}/d/Kn5xm-gZk/rabbitmq-overview)\n\n---\n\n[Opentelemetery Collector](https://${__org.name}d/BKf2sowmj/opentelemetry-collector)\n\n---\n\n[Loki Operational](https://${__org.name}/d/operational/loki-operational)\n\n---\n\n[Prometheus](https://${__org.name}/d/iUfmr5kMk/prometheus-application)\n\n---\n\n\n\n\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "Observability",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "dashboard",
+        "uid": "-- Dashboard --"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 0,
+        "y": 12
+      },
+      "id": 6,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "\n\n[Configuraion Database Overview](https://${__org.name}/d/a5c8b015-57bc-4b82-b286-99293dfcba06/database-flxrtconfigdb)\n\n---\n\n\n\n\n\n\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "Database",
+      "type": "text"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timeRangeUpdatedDuringEditOrView": false,
+  "timepicker": {
+    "hidden": true
+  },
+  "timezone": "browser",
+  "title": "Main Page",
+  "uid": "adr5cz5h7e2o0",
+  "version": 16,
+  "weekStart": ""
+}

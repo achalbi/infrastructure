@@ -1,0 +1,47 @@
+nameOverride: 'prometheus'
+
+prometheus:
+  prometheusSpec:
+    enableRemoteWriteReceiver: true
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+grafana:
+  enabled: false
+
+defaultRules:
+  create: false
+
+prometheus-node-exporter:
+  hostRootFsMount:
+    enabled: false
+
+alertmanager:
+  enabled: false
+
+prometheus-operator:
+  enabled: true
+
+kube-state-metrics:
+  enabled: false
+
+nodeExporter:
+  enabled: false
+
+kubernetesServiceMonitors:
+  enabled: false
+
+global:
+  rbac:
+    create: true
+
+    ## Create ClusterRoles that extend the existing view, edit and admin ClusterRoles to interact with prometheus-operator CRDs
+    ## Ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#aggregated-clusterroles
+    createAggregateClusterRoles: true

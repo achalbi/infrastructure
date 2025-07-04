@@ -29,7 +29,7 @@ ENVIRONMENT=${1:-"dev"}
 ACTION=${2:-"deploy"}
 
 # Cluster configuration
-CLUSTER_NAME="cluster-a"
+CLUSTER_NAME="docker-desktop" #"cluster-a"
 
 # =============================================================================
 # COLOR DEFINITIONS FOR OUTPUT
@@ -98,22 +98,39 @@ check_prerequisites() {
 # Check if the target cluster exists and is accessible
 check_cluster() {
     print_status "Checking cluster connectivity..."
-    
-    # Check if cluster exists
-    if ! kind get clusters | grep -q "$CLUSTER_NAME"; then
-        print_error "Cluster '$CLUSTER_NAME' not found. Available clusters:"
-        kind get clusters
-        exit 1
+
+    # Check if cluster exists (kind or docker-desktop)
+    if [[ "$CLUSTER_NAME" == "docker-desktop" ]]; then
+        # For Docker Desktop, check if context exists
+        if ! kubectl config get-contexts | grep -q "docker-desktop"; then
+            print_error "Kubernetes context 'docker-desktop' not found. Please ensure Docker Desktop is running with Kubernetes enabled."
+            exit 1
+        fi
+    else
+        # For kind clusters
+        if ! kind get clusters | grep -q "$CLUSTER_NAME"; then
+            print_error "Cluster '$CLUSTER_NAME' not found. Available clusters:"
+            kind get clusters
+            exit 1
+        fi
     fi
-    
-    # Check if kubectl can connect to the cluster
-    if ! kubectl cluster-info --context "kind-$CLUSTER_NAME" &> /dev/null; then
-        print_error "Cannot connect to cluster '$CLUSTER_NAME'. Please check your kubeconfig."
-        exit 1
+
+    # Check if kubectl can connect to the cluster/context
+    if [[ "$CLUSTER_NAME" == "docker-desktop" ]]; then
+        if ! kubectl cluster-info --context "docker-desktop" &> /dev/null; then
+            print_error "Cannot connect to 'docker-desktop' context. Please check your kubeconfig and Docker Desktop status."
+            exit 1
+        fi
+    else
+        if ! kubectl cluster-info --context "kind-$CLUSTER_NAME" &> /dev/null; then
+            print_error "Cannot connect to cluster '$CLUSTER_NAME'. Please check your kubeconfig."
+            exit 1
+        fi
     fi
-    
+
     print_status "Connected to cluster: $CLUSTER_NAME"
 }
+
 
 # Set the correct kubectl context
 set_cluster_context() {
@@ -191,6 +208,7 @@ action_menu() {
 
 # Get environment selection
 grab_env() {
+    clear
     local choice
     env_menu
     read -p "Enter your choice (1-3): " choice
@@ -205,6 +223,7 @@ grab_env() {
 
 # Get domain selection
 grab_domain() {
+    clear
     local env=$1
     local choice
     domain_menu "$env"
@@ -220,6 +239,7 @@ grab_domain() {
 
 # Get action selection for app or infra
 grab_action() {
+    clear
     local env=$1
     local domain=$2
     local choice

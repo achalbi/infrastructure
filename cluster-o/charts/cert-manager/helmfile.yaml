@@ -1,0 +1,17 @@
+repositories:
+- name: jetstack
+  url: https://charts.jetstack.io
+
+releases:
+- chart: jetstack/cert-manager
+  version: v1.18.1
+  name: cert-manager
+  namespace: cert-manager
+  # installed: false # set to true to install cert-manager and false to un-install cert-manager
+  set:
+  # Install the CustomResourceDefinitions and cert-manager itself
+    - name: installCRDs
+      value: true
+  values:
+    - ../../value-files/cert-manager/values.yaml
+    - ../../value-files/cert-manager/values.dev.yaml

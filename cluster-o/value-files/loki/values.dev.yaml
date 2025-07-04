@@ -1,0 +1,68 @@
+# # #########################################################################
+# # # Reference Doc: https://artifacthub.io/packages/helm/grafana/loki/5.41.6
+# # #########################################################################
+
+# # Development-specific overrides for local deployment
+# loki:
+#   # Override limits for development
+#   limits_config:
+#     volume_max_series: 500  # Reduced for development
+#     retention_period: 24h   # Shorter retention for development
+#     max_cache_freshness_per_query: 30s  # Faster cache refresh for development
+  
+#   # Optimize for development resources
+#   querier:
+#     max_concurrent: 2  # Reduced for development
+  
+#   # Development-specific storage settings
+#   storage:
+#     type: filesystem
+#     filesystem:
+#       chunks_directory: /var/loki/chunks
+#       rules_directory: /var/loki/rules
+#       admin_api_directory: /var/loki/admin
+  
+#   # Faster chunk lifecycle for development
+#   ingester:
+#     chunk_idle_period: 15m
+#     max_chunk_age: 15m
+#     chunk_retain_period: 15s
+
+# # Development deployment settings
+# deploymentMode: SingleBinary
+# singleBinary:
+#   replicas: 1
+#   resources:
+#     requests:
+#       memory: "256Mi"
+#       cpu: "100m"
+#     limits:
+#       memory: "512Mi"
+#       cpu: "250m"
+#   extraVolumes:
+#     - name: tsdb
+#       emptyDir: {}
+#   extraVolumeMounts:
+#     - name: tsdb
+#       mountPath: /data
+
+# # Disable minio for filesystem storage
+# minio:
+#   enabled: false
+
+# # Development monitoring settings
+# monitoring:
+#   dashboards:
+#     enabled: true
+#     namespace: observability
+#     labels:
+#       grafana_dashboard: "1"
+#   rules:
+#     enabled: true
+#     alerting: false  # Disable alerts in development
+#     namespace: observability
+#   serviceMonitor:
+#     enabled: true
+#     labels:
+#       prometheus: prometheus-prometheus
+#     interval: 30s  # Less frequent scraping in development

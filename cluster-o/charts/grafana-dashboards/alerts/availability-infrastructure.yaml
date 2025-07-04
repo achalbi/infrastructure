@@ -1,0 +1,504 @@
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: Availability
+      folder: Infrastructure Application
+      interval: 15m
+      rules:
+        - uid: bedi87d0zbhfke
+          title: Prometheus
+          condition: L
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: prometheus
+              model:
+                adhocFilters: []
+                datasource:
+                    type: prometheus
+                    uid: prometheus
+                editorMode: code
+                expr: min(up{job=~"prometheus.*"}) or vector(0)
+                intervalMs: 1000
+                legendFormat: '{{job}}'
+                maxDataPoints: 43200
+                refId: A
+            - refId: K
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - K
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: K
+                type: reduce
+            - refId: L
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - L
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: K
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: L
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 15m
+          annotations:
+            description: The {{ $labels.alertname }} is down or metrics are missing for more than 15 minutes.
+            summary: The {{ $labels.alertname }} is down
+          labels:
+            severity: critical
+            team: operations
+          isPaused: false
+          notification_settings:
+            receiver: Alert Configuration
+        - uid: bedifutjb7if4e
+          title: Loki
+          condition: L
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: prometheus
+              model:
+                adhocFilters: []
+                datasource:
+                    type: prometheus
+                    uid: prometheus
+                editorMode: code
+                expr: min(up{cluster="loki", service!="loki-gateway" }) or vector(0)
+                intervalMs: 1000
+                legendFormat: '{{job}}'
+                maxDataPoints: 43200
+                refId: A
+            - refId: K
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - K
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: K
+                type: reduce
+            - refId: L
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - L
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: K
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: L
+                type: threshold
+          dashboardUid: adrcfc2ow6o74b
+          panelId: 31
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 15m
+          annotations:
+            __dashboardUid__: adrcfc2ow6o74b
+            __panelId__: "31"
+            description: The {{ $labels.alertname }} is down or metrics are missing for more than 15 minutes.
+            summary: The {{ $labels.alertname }} is down
+          labels:
+            severity: critical
+            team: operations
+          isPaused: false
+          notification_settings:
+            receiver: Alert Configuration
+        - uid: bediggawnh2wwa
+          title: Grafana
+          condition: L
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: prometheus
+              model:
+                adhocFilters: []
+                datasource:
+                    type: prometheus
+                    uid: prometheus
+                disableTextWrap: false
+                editorMode: code
+                expr: min(up{job="grafana"}) or vector(0)
+                intervalMs: 1000
+                legendFormat: '{{job}}'
+                maxDataPoints: 43200
+                refId: A
+            - refId: K
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - K
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: K
+                type: reduce
+            - refId: L
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - L
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: K
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: L
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 15m
+          annotations:
+            description: The {{ $labels.alertname }} is down or metrics are missing for more than 15 minutes.
+            summary: The {{ $labels.alertname }} is down
+          labels:
+            severity: critical
+            team: operations
+          isPaused: false
+          notification_settings:
+            receiver: Alert Configuration
+        - uid: eedigwt7q9z40b
+          title: Cert Manager
+          condition: L
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: prometheus
+              model:
+                adhocFilters: []
+                datasource:
+                    type: prometheus
+                    uid: prometheus
+                editorMode: code
+                expr: min(up{job=~"cert-manager.*"}) or vector(0)
+                intervalMs: 1000
+                legendFormat: '{{job}}'
+                maxDataPoints: 43200
+                refId: A
+            - refId: K
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - K
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: K
+                type: reduce
+            - refId: L
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - L
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: K
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: L
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 15m
+          annotations:
+            description: The {{ $labels.alertname }} is down or metrics are missing for more than 15 minutes.
+            summary: The {{ $labels.alertname }} is down
+          labels:
+            severity: critical
+            team: operations
+          isPaused: false
+          notification_settings:
+            receiver: Alert Configuration
+        - uid: aedih61ckqku8f
+          title: Otel-Collector
+          condition: L
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: prometheus
+              model:
+                adhocFilters: []
+                datasource:
+                    type: prometheus
+                    uid: prometheus
+                editorMode: code
+                expr: min(up{job="opentelemetry-collector"}) or vector(0)
+                intervalMs: 1000
+                legendFormat: '{{job}}'
+                maxDataPoints: 43200
+                refId: A
+            - refId: K
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - K
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: K
+                type: reduce
+            - refId: L
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - L
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: K
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: L
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 15m
+          annotations:
+            description: The {{ $labels.alertname }} is down or metrics are missing for more than 15 minutes.
+            summary: The {{ $labels.alertname }} is down
+          labels:
+            severity: critical
+            team: operations
+          isPaused: false
+          notification_settings:
+            receiver: Alert Configuration
+        - uid: aedihtjikh534g
+          title: Grafana Tempo
+          condition: L
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: prometheus
+              model:
+                adhocFilters: []
+                datasource:
+                    type: prometheus
+                    uid: prometheus
+                editorMode: code
+                expr: min(up{namespace="observability", pod=~"tempo-.*"}) or vector(0)
+                intervalMs: 1000
+                legendFormat: '{{job}}'
+                maxDataPoints: 43200
+                refId: A
+            - refId: K
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params: []
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - K
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: K
+                type: reduce
+            - refId: L
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - L
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: K
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: L
+                type: threshold
+          noDataState: Alerting
+          execErrState: Alerting
+          for: 15m
+          annotations:
+            description: The {{ $labels.alertname }} is down or metrics are missing for more than 15 minutes.
+            summary: The {{ $labels.alertname }} is down
+          labels:
+            severity: critical
+            team: operations
+          isPaused: false
+          notification_settings:
+            receiver: Alert Configuration

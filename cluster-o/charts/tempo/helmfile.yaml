@@ -1,0 +1,20 @@
+repositories:
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+
+releases:
+  - name: tempo
+    chart: grafana/tempo
+    namespace: observability
+    version: 1.23.2
+    values:
+      - ../../value-files/tempo/values.yaml
+      - ../../value-files/tempo/values.dev.yaml
+
+  # - name: tempo-distributed
+  #   chart: grafana/tempo-distributed
+  #   namespace: observability
+  #   version: 1.42.3
+  #   values:
+  #     - ../values/tempo-distributed/values.yaml
+  #     - ../values/tempo-distributed/values.dev.yaml

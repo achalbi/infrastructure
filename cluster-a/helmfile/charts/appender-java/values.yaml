@@ -5,7 +5,7 @@ instances:
   enabled: true
   count: 4
   namePattern: "appender-java-%02d"  # Format: appender-java-01, appender-java-02, etc.
-  basePort: 8080  # Base port for the first instance, subsequent instances will use basePort + instanceIndex
+  basePort: 8080  
 
 image:
   repository: achalbi/appender-java
@@ -13,7 +13,7 @@ image:
   pullPolicy: Always
 
 service:
-  type: ClusterIP
+  type: LoadBalancer
   port: 8080
 
 livenessProbe:

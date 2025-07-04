@@ -59,12 +59,12 @@ spec:
           value: {{ if $isFirst }}"begin"{{ else if $isLast }}"end"{{ else }}"link"{{ end }}
         - name: SPRING_PROFILES_ACTIVE
           value: {{ $.Values.springProfilesActive | quote }}
-        # - name: HOST_IP
-        #   valueFrom:
-        #     fieldRef:
-        #       fieldPath: status.hostIP
-        # - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        #   value: {{ $.Values.otelCollector.exporterEndpoint | default "http://$(HOST_IP):4317" }}
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: {{ $.Values.otelCollector.exporterEndpoint | default "http://$(HOST_IP):4318" }}
         {{- if not $isLast }}
         {{- $nextInstanceIndex := add $instanceIndex 1 }}
         {{- $nextInstanceName := printf $.Values.instances.namePattern $nextInstanceIndex }}
@@ -88,5 +88,5 @@ spec:
             port: http
           initialDelaySeconds: {{ $.Values.readinessProbe.initialDelaySeconds | default 20 }}
           periodSeconds: {{ $.Values.readinessProbe.periodSeconds | default 5 }}
-{{- end }}
 {{- end }} 
+{{- end }}

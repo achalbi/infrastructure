@@ -1,0 +1,144 @@
+# Loki Single Binary Configuration with Filesystem Storage
+loki:
+  # Disable authentication for simplicity
+  auth_enabled: false
+  
+  # Common configuration for single binary deployment
+  commonConfig:
+    replication_factor: 1
+    path_prefix: /var/loki
+  
+  # Storage configuration for filesystem
+  storage:
+    type: filesystem
+    filesystem:
+      chunks_directory: /var/loki/chunks
+      rules_directory: /var/loki/rules
+      admin_api_directory: /var/loki/admin
+  
+  # Schema configuration
+  schemaConfig:
+    configs:
+      - from: 2020-10-24
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+  
+  # Pattern ingester configuration
+  pattern_ingester:
+    enabled: true
+  
+  # Limits configuration
+  limits_config:
+    allow_structured_metadata: true
+    volume_enabled: true
+    retention_period: 672h # 28 days retention
+  
+  # Compactor configuration for retention
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+  
+  # Ruler configuration for local filesystem
+  rulerConfig:
+    storage:
+      type: local
+  
+  # Ruler configuration
+  ruler:
+    enable_api: true
+
+# Set deployment mode to SingleBinary
+deploymentMode: SingleBinary
+
+# Single binary pod configuration
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: "" # Use default storage class
+  # Pod resource limits (adjust as needed)
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Zero out replica counts of other deployment modes
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+ingester:
+  replicas: 0
+querier:
+  replicas: 0
+queryFrontend:
+  replicas: 0
+queryScheduler:
+  replicas: 0
+distributor:
+  replicas: 0
+compactor:
+  replicas: 0
+indexGateway:
+  replicas: 0
+bloomCompactor:
+  replicas: 0
+bloomGateway:
+  replicas: 0
+
+# Disable MinIO since we're using filesystem storage
+minio:
+  enabled: false
+
+# Gateway configuration (NGINX proxy)
+gateway:
+  enabled: true
+  replicas: 1
+
+# Monitoring configuration
+monitoring:
+  dashboards:
+    enabled: false
+  rules:
+    enabled: false
+  alerts:
+    enabled: false
+  serviceMonitor:
+    enabled: false
+
+# Disable self-monitoring components
+selfMonitoring:
+  enabled: false
+  grafanaAgent:
+    installOperator: false
+
+# Loki Canary (optional monitoring component)
+lokiCanary:
+  enabled: false
+
+# Test configuration
+test:
+  enabled: false
+
+# Cache configuration - reduce memory usage for small deployments
+chunksCache:
+  enabled: true
+  allocatedMemory: 512  # Reduced from default 1024
+  writebackSizeLimit: 10MB
+
+resultsCache:
+  enabled: false  # Disable to save resources
+
+# Network policy
+networkPolicy:
+  enabled: false

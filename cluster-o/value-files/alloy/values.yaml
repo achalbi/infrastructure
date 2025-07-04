@@ -1,0 +1,58 @@
+alloy:
+  configMap:
+    content: |-
+      otelcol.receiver.otlp "default" {
+        grpc {
+          endpoint = "localhost:4317"
+        }
+
+        http {
+          endpoint = "0.0.0.0:4317"
+        }
+
+        output {
+          metrics = [otelcol.processor.batch.default.input]
+          logs    = [otelcol.processor.batch.default.input]
+          traces  = [otelcol.processor.batch.default.input]
+        }
+      }
+
+      otelcol.processor.batch "default" {
+        timeout         = "1s"
+        send_batch_size = 1024
+
+        output {
+          metrics = [otelcol.processor.memory_limiter.default.input]
+          logs    = [otelcol.processor.memory_limiter.default.input]
+          traces  = [otelcol.processor.memory_limiter.default.input]
+        }
+      }
+
+      otelcol.processor.memory_limiter "default" {
+        check_interval = "1s"
+        limit          = "900MiB"
+
+        output {
+          metrics = []
+          logs    = [otelcol.exporter.otlphttp.default_loki.input]
+          traces  = [otelcol.exporter.otlp.default_tempo.input]
+        }
+      }
+
+      otelcol.exporter.otlphttp "default_loki" {
+        client {
+          endpoint           = "http://loki-gateway.observability:80/otlp"
+          compression        = "snappy"
+          http2_ping_timeout = "0s"
+        }
+      }
+
+      otelcol.exporter.otlp "default_tempo" {
+        client {
+          endpoint = "tempo.observability:4317"
+
+          tls {
+            insecure = true
+          }
+        }
+      }

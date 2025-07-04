@@ -1,0 +1,13 @@
+repositories:
+  - name: opentelemetry-helm
+    url: https://open-telemetry.github.io/opentelemetry-helm-charts
+
+releases:
+  - name: "opentelemetry-collector"
+    namespace: observability
+    createNamespace: true
+    chart: opentelemetry-helm/opentelemetry-collector
+    version: 0.127.2
+    values:
+      - ../../value-files/opentelemetry-collector/values.yaml
+      - ../../value-files/opentelemetry-collector/values.dev.yaml

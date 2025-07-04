@@ -1,0 +1,153 @@
+# Reference documentation: https://opentelemetry.io/docs/platforms/kubernetes/getting-started/
+
+# OpenTelemetry Collector values
+mode: deployment  # deployment or daemonset (daemonset is for kubernetes)   
+
+# We only want one of these collectors - any more and we'd produce duplicate data
+replicaCount: 1
+
+# presets:
+#   # enables the k8sclusterreceiver and adds it to the metrics pipelines
+#   clusterMetrics:
+#     enabled: true
+#   # enables the k8sobjectsreceiver to collect events only and adds it to the logs pipelines
+#   kubernetesEvents:
+#     enabled: true
+
+# OpenTelemetry Collector configuration
+config:
+  processors:
+    batch:
+      timeout: 1s
+      send_batch_size: 1024
+    memory_limiter:
+      check_interval: 1s
+      limit_mib: 900
+    attributes:
+      actions:
+        - key: log.file.name
+          action: delete
+        - key: log.file.path
+          action: delete
+  exporters:
+    # debug: to be not present in production value file
+    debug:
+      verbosity: basic
+    otlphttp/loki:
+      endpoint: http://loki-gateway.observability:80/otlp
+    #    otlp/jaeger:
+    #      endpoint: http://jaeger-collector:4317
+    #      tls:
+    #        insecure: true
+    otlp/tempo:
+      endpoint: tempo.observability:4317
+      tls:
+        insecure: true
+    # Data sources: metrics
+    # Prometheus Remote Write Exporter sends OpenTelemetry metrics to Prometheus remote write compatible backends such as Cortex, Mimir, and Thanos.
+    prometheusremotewrite:
+      #      endpoint: http://prometheus.example.com:9411/api/prom/push
+      #      # When using the official Prometheus (running via Docker)
+      endpoint: 'http://prometheus-prometheus:9090/api/v1/write'
+      target_info:
+        enabled: true
+      tls:
+        insecure: true
+  service:
+    pipelines:
+      traces:
+        receivers: [ otlp ]
+        # processors: [ batch, memory_limiter ]
+        exporters: [  otlp/tempo, debug ]
+        # exporters: [ spanmetrics, otlp/tempo,  debug ]
+      metrics:
+        # receivers: [ otlp, spanmetrics ]
+        receivers: [ otlp ]
+        # processors: [ batch, memory_limiter ]
+        exporters: [  prometheusremotewrite, debug ]
+      logs:
+        receivers: [ otlp]
+        processors: [ attributes, memory_limiter ]
+        exporters: [ otlphttp/loki, debug ]
+
+  # connectors:
+  #   spanmetrics:
+  #     namespace: span.metrics
+  #     histogram:
+  #       explicit:
+  #         buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]
+  #     dimensions:
+  #       - name: http.method
+  #         default: GET
+  #       - name: http.status_code
+  #     exemplars:
+  #       enabled: true
+  #     exclude_dimensions: ['status.code']
+  #     dimensions_cache_size: 1000
+  #     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+  #     metrics_flush_interval: 15s
+  #     #      metrics_expiration: 5m  # need to be uncommented when the feature is available
+  #     events:
+  #       enabled: true
+  #       dimensions:
+  #         - name: exception.type
+  #         - name: exception.message
+  #     resource_metrics_key_attributes:
+  #       - service.name
+  #       - telemetry.sdk.language
+  #       - telemetry.sdk.name
+
+resources:
+  limits:
+    memory: 1Gi
+  requests:
+    cpu: 100m
+
+image:
+  repository: otel/opentelemetry-collector-contrib
+  pullPolicy: Always
+
+fullnameOverride: "opentelemetry-collector"
+
+service:
+  type: NodePort
+
+ports:
+  otlp:
+    enabled: true
+    containerPort: 4317
+    servicePort: 4317
+    hostPort: 4317
+    protocol: TCP
+    nodePort: 30317
+    appProtocol: grpc
+  otlp-http:
+    enabled: true
+    containerPort: 4318
+    servicePort: 4318
+    hostPort: 4318
+    nodePort: 30318
+    protocol: TCP
+
+# ingress:
+#   enabled: true
+#   ingressClassName: nginx
+#   hosts:
+#     - host: otel-collector.telemetrix.in
+#       paths:
+#         - path: /
+#           pathType: Prefix
+#           port: 4318
+
+
+serviceMonitor:
+   # The service monitor by default scrapes the metrics port.
+  # The metrics port needs to be enabled as well.
+  enabled: true
+  metricsEndpoints:
+    - port: metrics
+      interval: 15s
+
+  # additional labels for the ServiceMonitor
+  extraLabels:
+    prometheus: prometheus-prometheus

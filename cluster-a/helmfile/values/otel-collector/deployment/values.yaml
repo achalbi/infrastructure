@@ -28,8 +28,8 @@ config:
     # debug: to be not present in production value file
     debug:
       verbosity: detailed
-    otlp:
-      endpoint: ""
+    otlp/cluster-o:  
+      endpoint: "http://host.docker.internal:30317" # point to the otel-collector service in another cluster
       tls:
         insecure: true
 
@@ -38,15 +38,15 @@ config:
       traces:
         receivers: [otlp]
         processors: [batch, memory_limiter]
-        exporters: [debug]
+        exporters: [otlp/cluster-o]
       metrics:
         receivers: [otlp]
         processors: [batch, memory_limiter]
-        exporters: [debug]
+        exporters: [otlp/cluster-o]
       logs:
         receivers: [otlp]
         processors: [batch, memory_limiter]
-        exporters: [debug]
+        exporters: [debug, otlp/cluster-o]
 
 resources:
   limits:

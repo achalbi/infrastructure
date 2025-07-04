@@ -1,0 +1,10 @@
+helmfiles:
+  - ./pre-install/helmfile.yaml
+  - ./cert-manager/helmfile.yaml
+  - ./kube-prometheus-stack/helmfile.yaml
+  - ./opentelemetry-collector/helmfile.yaml
+  - ./nginx/helmfile.yaml
+  - ./loki/helmfile.yaml
+  - ./tempo/helmfile.yaml
+  - ./grafana-dashboards/helmfile.yaml 
+  - ./grafana/helmfile.yaml 

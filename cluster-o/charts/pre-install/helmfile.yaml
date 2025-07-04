@@ -1,0 +1,5 @@
+releases:
+  - name: pre-install
+    namespace:  observability
+    chart: .
+

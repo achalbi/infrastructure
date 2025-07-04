@@ -1,0 +1,22 @@
+# Development-specific overrides for Tempo
+tempo:
+  # Reduced retention for development
+  compactor:
+    compaction:
+      block_retention: 30m  # Shorter retention for development
+  
+  # Disable metrics generator in development
+  metrics_generator:
+    enabled: false
+
+# Development resource limits
+persistence:
+  enabled: true
+  storageClassName: ""
+  accessMode: ReadWriteOnce
+  size: 5Gi  # Smaller storage for development
+
+# Development monitoring
+serviceMonitor:
+  enabled: true
+  interval: 60s  # Less frequent scraping in development

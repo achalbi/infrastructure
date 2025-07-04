@@ -1,0 +1,11 @@
+repositories:
+- name: grafana
+  url: https://grafana.github.io/helm-charts
+
+releases:
+  - chart: grafana/alloy
+    version: 1.1.2
+    name: alloy
+    namespace: observability
+    values:
+    - ../../value-files/alloy/values.yaml
