@@ -1,0 +1,21 @@
+repositories:
+  - name: open-telemetry
+    url: https://open-telemetry.github.io/opentelemetry-helm-charts
+
+
+environments:
+  dev:
+    values:
+      - envPrefix: dev-
+  prod:
+    values:
+      - envPrefix: prod-
+---
+releases:
+  - name: "{{ .Values.envPrefix }}opentelemetry-operator"
+    namespace: "{{ .Values.envPrefix }}observability"
+    createNamespace: true
+    chart: opentelemetry-helm/opentelemetry-operator
+    version: 0.90.4
+    values:
+      - ../../values/otel-operator/values.yaml 

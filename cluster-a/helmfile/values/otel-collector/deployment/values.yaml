@@ -42,11 +42,11 @@ config:
       metrics:
         receivers: [otlp]
         processors: [batch, memory_limiter]
-        exporters: [otlp/cluster-o]
+        exporters: [debug,otlp/cluster-o]
       logs:
         receivers: [otlp]
         processors: [batch, memory_limiter]
-        exporters: [debug, otlp/cluster-o]
+        exporters: [ otlp/cluster-o]
 
 resources:
   limits:

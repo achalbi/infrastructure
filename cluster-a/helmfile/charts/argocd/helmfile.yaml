@@ -1,0 +1,48 @@
+repositories:
+  - name: stable
+    url: https://charts.helm.sh/stable
+  - name: argo
+    url: https://argoproj.github.io/argo-helm
+
+
+environments:
+  dev:
+    values:
+      - envPrefix: dev-
+  prod:
+    values:
+      - envPrefix: prod-
+---
+
+releases:
+  - name: "{{ .Values.envPrefix }}argocd"
+    namespace: "{{ .Values.envPrefix }}argocd"
+    createNamespace: true
+    chart: argo/argo-cd
+    version: 5.51.6
+    values:
+      - server:
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            hosts:
+              - argocd.example.com
+            tls:
+              - secretName: argocd-server-tls
+                hosts:
+                  - argocd.example.com
+          extraArgs:
+            - --insecure
+        configs:
+          secret:
+            argocdServerAdminPassword: "$2a$10$YourHashedPasswordHere"
+        dex:
+          enabled: false
+        redis:
+          enabled: true
+        repoServer:
+          serviceAccount:
+            create: true
+        applicationSet:
+          enabled: true
+        fullnameOverride: "argocd" 

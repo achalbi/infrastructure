@@ -26,5 +26,7 @@ releases:
     chart: ../../charts/appender-java
     needs:
       - dev-appender-java/pre-install
+    values:
+      - ../../values/appender-java/values.yaml
 
 

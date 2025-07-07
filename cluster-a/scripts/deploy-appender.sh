@@ -363,21 +363,21 @@ deploy_infrastructure() {
 
     # Deploy ArgoCD
     print_status "Deploying ArgoCD..."
-    helmfile -e $env apply --selector name=${prefix}argocd
+    helmfile -f charts/argocd/helmfile.yaml -e $env apply
     # Wait for ArgoCD
     print_status "Waiting for ArgoCD..."
     kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n ${prefix}argocd || print_error "ArgoCD failed to become ready"
 
     # Deploy Ingress-Nginx
     print_status "Deploying Ingress-Nginx..."
-    helmfile -e $env apply --selector name=${prefix}ingress-nginx
+    helmfile -f charts/nginx/helmfile.yaml -e $env apply
     # Wait for Ingress-Nginx
     print_status "Waiting for Ingress-Nginx..."
     kubectl wait --for=condition=available --timeout=300s deployment/ingress-nginx-controller -n ${prefix}ingress-nginx || print_error "Ingress-Nginx failed to become ready"
 
     # Deploy cert-manager
     print_status "Deploying cert-manager..."
-    helmfile -e $env apply --selector name=${prefix}cert-manager
+    helmfile -f charts/cert-manager/helmfile.yaml -e $env apply
     # Wait for cert-manager
     print_status "Waiting for cert-manager..."
     kubectl get namespace ${prefix}cert-manager >/dev/null 2>&1 || kubectl create namespace ${prefix}cert-manager
@@ -385,21 +385,21 @@ deploy_infrastructure() {
 
     # Deploy OpenTelemetry Operator
     print_status "Deploying OpenTelemetry Operator..."
-    helmfile -e $env apply --selector name=${prefix}opentelemetry-operator
+    helmfile -f charts/opentelemetry-operator/helmfile.yaml -e $env apply
     # Wait for OpenTelemetry Operator
     print_status "Waiting for OpenTelemetry Operator..."
     kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator -n ${prefix}observability || print_error "OpenTelemetry Operator failed to become ready"
 
     # Deploy OpenTelemetry Collector (Deployment)
     print_status "Deploying OpenTelemetry Collector (Deployment)..."
-    helmfile -e $env apply --selector name=${prefix}opentelemetry-collector-deployment
+    helmfile -f charts/opentelemetry-collector-deployment/helmfile.yaml -e $env apply
     # Wait for OpenTelemetry Collector Deployment
     print_status "Waiting for OpenTelemetry Collector Deployment..."
     kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-collector-deployment -n ${prefix}observability || print_error "OpenTelemetry Collector Deployment failed to become ready"
 
     # Deploy OpenTelemetry Collector (DaemonSet)
     print_status "Deploying OpenTelemetry Collector (DaemonSet)..."
-    helmfile -e $env apply --selector name=${prefix}opentelemetry-collector-daemonset
+    helmfile -f charts/opentelemetry-collector-daemonset/helmfile.yaml -e $env apply
     # Wait for OpenTelemetry Collector DaemonSet
     print_status "Waiting for OpenTelemetry Collector DaemonSet..."
     kubectl rollout status daemonset/opentelemetry-collector-daemonset-agent -n ${prefix}observability --timeout=300s || print_error "OpenTelemetry Collector DaemonSet failed to become ready"
@@ -944,22 +944,22 @@ clear_infrastructure() {
 
     # Delete in reverse dependency order
     print_status "Deleting OpenTelemetry Operator..."
-    helmfile -e "$env" destroy --selector name="${prefix}opentelemetry-operator"
+    helmfile -f charts/opentelemetry-operator/helmfile.yaml -e "$env" destroy
 
     print_status "Deleting OpenTelemetry Collector (Deployment)..."
-    helmfile -e "$env" destroy --selector name="${prefix}opentelemetry-collector-deployment"
+    helmfile -f charts/opentelemetry-collector-deployment/helmfile.yaml -e "$env" destroy
 
     print_status "Deleting OpenTelemetry Collector (DaemonSet)..."
-    helmfile -e "$env" destroy --selector name="${prefix}opentelemetry-collector-daemonset"
+    helmfile -f charts/opentelemetry-collector-daemonset/helmfile.yaml -e "$env" destroy
 
     print_status "Deleting cert-manager..."
-    helmfile -e "$env" destroy --selector name="${prefix}cert-manager"
+    helmfile -f charts/cert-manager/helmfile.yaml -e "$env" destroy
 
     print_status "Deleting Ingress-Nginx..."
-    helmfile -e "$env" destroy --selector name="${prefix}ingress-nginx"
+    helmfile -f charts/nginx/helmfile.yaml -e "$env" destroy
 
     print_status "Deleting ArgoCD..."
-    helmfile -e "$env" destroy --selector name="${prefix}argocd"
+    helmfile -f charts/argocd/helmfile.yaml -e "$env" destroy
 
     print_status "All infrastructure components deleted for environment: $env"
 }

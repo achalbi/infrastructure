@@ -17,3 +17,20 @@ spec:
     port: 4318
     targetPort: 4318
     nodePort: 30098
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector-metrics
+  namespace: observability
+spec:
+  selector:
+    app.kubernetes.io/instance: opentelemetry-collector
+    app.kubernetes.io/name: opentelemetry-collector
+  ports:
+    - protocol: TCP
+      port: 8889
+      targetPort: 8889
+  type: ClusterIP  # Use LoadBalancer or NodePort if external access is needed

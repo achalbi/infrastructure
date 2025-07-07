@@ -47,7 +47,7 @@ config:
   exporters:
     # debug: to be not present in production value file
     debug:
-      verbosity: detailed
+      verbosity: basic
     otlp:
       endpoint: "http://opentelemetry-collector-deployment.dev-observability:4317"
       # sending_queue:

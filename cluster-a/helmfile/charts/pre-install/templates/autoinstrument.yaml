@@ -37,5 +37,5 @@ spec:
         value: "*"
       # OpenTelemetry configuration
       - name: OTEL_TRACES_EXPORTER
-        value: "logging"
+        value: "otlp"
 

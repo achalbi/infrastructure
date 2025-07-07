@@ -17,13 +17,12 @@ replicaCount: 1
 # OpenTelemetry Collector configuration
 config:
   receivers:
-    # jaeger:
-    #   protocols:
-    #     thrift_compact:
-    #       endpoint: "0.0.0.0:6831"
-    #     thrift_binary:
-    #       endpoint: "0.0.0.0:6832"
-    #     thrift_http:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
   processors:
     batch:
       timeout: 1s
@@ -37,10 +36,55 @@ config:
           action: delete
         - key: log.file.path
           action: delete
+    # transform:
+    #   metric_statements:
+    #     - context: datapoint
+    #       statements:
+    #         - 'set(attributes["k8s.pod.name"], resource.attributes["k8s.pod.name"])'
+    #         - 'set(attributes["k8s.namespace.name"], resource.attributes["k8s.namespace.name"])'
+    #         - 'set(attributes["k8s.deployment.name"], resource.attributes["k8s.deployment.name"])'
+    #         - 'set(attributes["k8s.container.name"], resource.attributes["k8s.container.name"])'
+    #         - 'set(attributes["k8s.node.name"], resource.attributes["k8s.node.name"])'
+    #         - 'set(attributes["app.kubernetes.io/name"], resource.attributes["app.kubernetes.io/name"])'
+    #         - 'set(attributes["app.kubernetes.io/instance"], resource.attributes["app.kubernetes.io/instance"])'
+    #         - 'set(attributes["k8s.cluster.name"], resource.attributes["k8s.cluster.name"])'
+    #         - 'set(attributes["container.id"], resource.attributes["container.id"])'
+    resource:
+      attributes:
+        - key: k8s.pod.name
+          from_attribute: k8s.pod.name
+          action: insert
+        - key: k8s.namespace.name
+          from_attribute: k8s.namespace.name
+          action: insert
+        - key: k8s.deployment.name
+          from_attribute: k8s.deployment.name
+          action: insert
+        - key: k8s.container.name
+          from_attribute: k8s.container.name
+          action: insert
+        - key: k8s.node.name
+          from_attribute: k8s.node.name
+          action: insert
+        - key: app.kubernetes.io/name
+          from_attribute: app.kubernetes.io/name
+          action: insert
+        - key: app.kubernetes.io/instance
+          from_attribute: app.kubernetes.io/instance
+          action: insert
+        - key: k8s.cluster.name
+          from_attribute: k8s.cluster.name
+          action: insert
+        - key: container.id
+          action: delete
+    # resourcedetection:
+    #   detectors: [env, system, eks]
+    #   timeout: 5s
+    #   override: false
   exporters:
     # debug: to be not present in production value file
     debug:
-      verbosity: basic
+      verbosity: detailed
     otlphttp/loki:
       endpoint: http://loki-gateway.observability:80/otlp
     #    otlp/jaeger:
@@ -52,11 +96,17 @@ config:
       tls:
         insecure: true
     # Data sources: metrics
+    prometheus:
+      endpoint: 0.0.0.0:9464
+
     # Prometheus Remote Write Exporter sends OpenTelemetry metrics to Prometheus remote write compatible backends such as Cortex, Mimir, and Thanos.
     prometheusremotewrite:
       #      endpoint: http://prometheus.example.com:9411/api/prom/push
       #      # When using the official Prometheus (running via Docker)
       endpoint: 'http://prometheus-prometheus:9090/api/v1/write'
+            # Convert remaining resource attributes to labels
+      resource_to_telemetry_conversion:
+        enabled: true
       target_info:
         enabled: true
       tls:
@@ -66,44 +116,17 @@ config:
       traces:
         receivers: [ otlp ]
         processors: [ batch, memory_limiter ]
-        exporters: [  otlp/tempo, debug ]
+        exporters: [  otlp/tempo ]
         # exporters: [ spanmetrics, otlp/tempo,  debug ]
       metrics:
         # receivers: [ otlp, spanmetrics ]
         receivers: [ otlp ]
-        processors: [ batch, memory_limiter ]
-        exporters: [  prometheusremotewrite, debug ]
+        processors: [ batch, memory_limiter, resource]
+        exporters: [ prometheusremotewrite, debug ]
       logs:
         receivers: [ otlp]
         processors: [ attributes, memory_limiter ]
-        exporters: [ otlphttp/loki, debug ]
-
-  # connectors:
-  #   spanmetrics:
-  #     namespace: span.metrics
-  #     histogram:
-  #       explicit:
-  #         buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]
-  #     dimensions:
-  #       - name: http.method
-  #         default: GET
-  #       - name: http.status_code
-  #     exemplars:
-  #       enabled: true
-  #     exclude_dimensions: ['status.code']
-  #     dimensions_cache_size: 1000
-  #     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
-  #     metrics_flush_interval: 15s
-  #     #      metrics_expiration: 5m  # need to be uncommented when the feature is available
-  #     events:
-  #       enabled: true
-  #       dimensions:
-  #         - name: exception.type
-  #         - name: exception.message
-  #     resource_metrics_key_attributes:
-  #       - service.name
-  #       - telemetry.sdk.language
-  #       - telemetry.sdk.name
+        exporters: [ otlphttp/loki ]
 
 resources:
   limits:
@@ -136,7 +159,13 @@ ports:
     hostPort: 4318
     nodePort: 30318
     protocol: TCP
-
+  prometheus:
+    enabled: true
+    containerPort: 9464
+    servicePort: 9464
+    hostPort: 9464
+    protocol: TCP
+    nodePort: 30464  # Choose an available NodePort
 # ingress:
 #   enabled: true
 #   ingressClassName: nginx
@@ -155,7 +184,7 @@ serviceMonitor:
   metricsEndpoints:
     - port: metrics
       interval: 15s
-
+      path: /metrics
   # additional labels for the ServiceMonitor
   extraLabels:
     prometheus: prometheus-prometheus
