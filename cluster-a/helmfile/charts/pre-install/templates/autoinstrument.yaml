@@ -14,3 +14,28 @@ spec:
     argument: "1.0"
   java:
     image: {{ .Values.otelAutoInstrumentation.javaAgentImage | quote }}
+    env:
+      # — Core OTEL settings —
+      - name: OTEL_SERVICE_NAME
+        value: {{ .Values.otelAutoInstrumentation.serviceName | quote }}
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: {{ .Values.otelAutoInstrumentation.exporterEndpoint | quote }}
+      - name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.namespace={{ .Release.Namespace }},service.instance.id=$(HOSTNAME)"
+      - name: OTEL_LOGS_EXPORTER
+        value: "otlp"
+      - name: OTEL_PROPAGATORS
+        value: "tracecontext,baggage,b3"
+      - name: OTEL_TRACES_SAMPLER
+        value: "parentbased_traceidratio"
+      - name: OTEL_TRACES_SAMPLER_ARG
+        value: "1.0"
+      # — Enable Logback MDC injection —
+      - name: OTEL_INSTRUMENTATION_LOGBACK_MDC_ENABLED
+        value: "true"
+      - name: OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_CAPTURE_MDC_ATTRIBUTES
+        value: "*"
+      # OpenTelemetry configuration
+      - name: OTEL_TRACES_EXPORTER
+        value: "logging"
+

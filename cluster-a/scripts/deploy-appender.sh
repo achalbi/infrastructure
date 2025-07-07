@@ -29,7 +29,7 @@ ENVIRONMENT=${1:-"dev"}
 ACTION=${2:-"deploy"}
 
 # Cluster configuration
-CLUSTER_NAME="docker-desktop" #"cluster-a"
+CLUSTER_NAME="cluster-a"
 
 # =============================================================================
 # COLOR DEFINITIONS FOR OUTPUT
@@ -99,33 +99,25 @@ check_prerequisites() {
 check_cluster() {
     print_status "Checking cluster connectivity..."
 
-    # Check if cluster exists (kind or docker-desktop)
-    if [[ "$CLUSTER_NAME" == "docker-desktop" ]]; then
-        # For Docker Desktop, check if context exists
-        if ! kubectl config get-contexts | grep -q "docker-desktop"; then
-            print_error "Kubernetes context 'docker-desktop' not found. Please ensure Docker Desktop is running with Kubernetes enabled."
-            exit 1
-        fi
-    else
-        # For kind clusters
-        if ! kind get clusters | grep -q "$CLUSTER_NAME"; then
-            print_error "Cluster '$CLUSTER_NAME' not found. Available clusters:"
-            kind get clusters
-            exit 1
-        fi
+    # Check if kind cluster exists
+    if ! kind get clusters | grep -q "$CLUSTER_NAME"; then
+        print_error "Cluster '$CLUSTER_NAME' not found. Available clusters:"
+        kind get clusters
+        exit 1
     fi
 
-    # Check if kubectl can connect to the cluster/context
-    if [[ "$CLUSTER_NAME" == "docker-desktop" ]]; then
-        if ! kubectl cluster-info --context "docker-desktop" &> /dev/null; then
-            print_error "Cannot connect to 'docker-desktop' context. Please check your kubeconfig and Docker Desktop status."
-            exit 1
-        fi
-    else
-        if ! kubectl cluster-info --context "kind-$CLUSTER_NAME" &> /dev/null; then
-            print_error "Cannot connect to cluster '$CLUSTER_NAME'. Please check your kubeconfig."
-            exit 1
-        fi
+    # Check if kubectl context exists
+    if ! kubectl config get-contexts | grep -q "kind-$CLUSTER_NAME"; then
+        print_error "Kubernetes context 'kind-$CLUSTER_NAME' not found. Please ensure the cluster is properly configured."
+        print_error "Available contexts:"
+        kubectl config get-contexts
+        exit 1
+    fi
+
+    # Check if kubectl can connect to the cluster
+    if ! kubectl cluster-info --context "kind-$CLUSTER_NAME" &> /dev/null; then
+        print_error "Cannot connect to cluster '$CLUSTER_NAME'. Please check your kubeconfig and cluster status."
+        exit 1
     fi
 
     print_status "Connected to cluster: $CLUSTER_NAME"
@@ -136,6 +128,17 @@ check_cluster() {
 set_cluster_context() {
     print_status "Setting kubectl context to kind-$CLUSTER_NAME..."
     kubectl config use-context "kind-$CLUSTER_NAME"
+    
+    # Verify the context was set correctly
+    current_context=$(kubectl config current-context)
+    if [ "$current_context" != "kind-$CLUSTER_NAME" ]; then
+        print_error "Failed to set context to kind-$CLUSTER_NAME. Current context is: $current_context"
+        print_error "Available contexts:"
+        kubectl config get-contexts
+        exit 1
+    fi
+    
+    print_status "Successfully set context to: $current_context"
 }
 
 # =============================================================================
@@ -999,6 +1002,7 @@ show_help() {
     echo "Cluster Information:"
     echo "  Target Cluster: $CLUSTER_NAME"
     echo "  Context: kind-$CLUSTER_NAME"
+    echo "  Note: This script will automatically switch to the kind-$CLUSTER_NAME context"
     echo ""
     echo "Deployment Order:"
     echo "  1. Deploy infrastructure first (ArgoCD, Ingress-Nginx)"
@@ -1013,28 +1017,27 @@ show_help() {
 execute_action() {
     local env=$1
     local action=$2
+    
+    # Always set cluster context first for all actions except help
+    if [[ "${action,,}" != "help" && "${action,,}" != "-h" && "${action,,}" != "--help" ]]; then
+        check_prerequisites
+        check_cluster
+        set_cluster_context
+    fi
+    
     case ${action,,} in  # ${action,,} converts to lowercase
         "infra")
             # Infrastructure deployment workflow
-            check_prerequisites
-            check_cluster
-            set_cluster_context
             deploy_infrastructure "$env"
             wait_for_infrastructure "$env"
             show_infrastructure_status "$env"
             print_status "Infrastructure deployment completed successfully!"
             ;;
         "clear")
-            check_prerequisites
-            check_cluster
-            set_cluster_context
             clear_infrastructure "$env"
             ;;
         "deploy")
             # Full deployment workflow
-            check_prerequisites
-            check_cluster
-            set_cluster_context
             deploy_appender "$env"
             wait_for_appender "$env"
             show_status "$env"
@@ -1043,8 +1046,6 @@ execute_action() {
             ;;
         "status")
             # Show current status
-            check_cluster
-            set_cluster_context
             if [[ "$env" == infra* ]]; then
                 show_infrastructure_status "$env"
             else
@@ -1053,27 +1054,19 @@ execute_action() {
             ;;
         "test")
             # Test instance health
-            check_cluster
-            set_cluster_context
             test_chain "$env"
             ;;
         "delete")
             # Delete deployment
-            check_cluster
-            set_cluster_context
             remove_appender "$env"
             ;;
         "restart")
             # Restart appender pods
-            check_cluster
-            set_cluster_context
             restart_appender_pods "$env"
             port_forward_and_open "$env"
             ;;
         "portforward")
             # Just port forward to first appender pod
-            check_cluster
-            set_cluster_context
             port_forward_and_open "$env"
             ;;
         "help"|"-h"|"--help")

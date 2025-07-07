@@ -16,6 +16,14 @@ replicaCount: 1
 
 # OpenTelemetry Collector configuration
 config:
+  receivers:
+    # jaeger:
+    #   protocols:
+    #     thrift_compact:
+    #       endpoint: "0.0.0.0:6831"
+    #     thrift_binary:
+    #       endpoint: "0.0.0.0:6832"
+    #     thrift_http:
   processors:
     batch:
       timeout: 1s
@@ -57,13 +65,13 @@ config:
     pipelines:
       traces:
         receivers: [ otlp ]
-        # processors: [ batch, memory_limiter ]
+        processors: [ batch, memory_limiter ]
         exporters: [  otlp/tempo, debug ]
         # exporters: [ spanmetrics, otlp/tempo,  debug ]
       metrics:
         # receivers: [ otlp, spanmetrics ]
         receivers: [ otlp ]
-        # processors: [ batch, memory_limiter ]
+        processors: [ batch, memory_limiter ]
         exporters: [  prometheusremotewrite, debug ]
       logs:
         receivers: [ otlp]
